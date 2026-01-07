@@ -8,3 +8,4 @@
 ^vignettes/\.quarto$
 ^vignettes/*_files$
 ^CLAUDE\.md$
+^\.vscode$

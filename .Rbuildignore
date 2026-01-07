@@ -5,4 +5,6 @@
 ^README\.Rmd$
 ^\.git$
 ^\.gitignore$
+^vignettes/\.quarto$
+^vignettes/*_files$
 ^CLAUDE\.md$

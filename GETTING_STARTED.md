@@ -1,0 +1,318 @@
+# Getting Started with buoyant
+
+This guide walks you through deploying your first `_server.yml` application using `buoyant`.
+
+## Prerequisites
+
+1. **R** (>= 3.0.0)
+2. **DigitalOcean Account** - Sign up at https://www.digitalocean.com
+3. **SSH Keys** - Configure SSH keys for your system
+
+## Installation
+
+```r
+# Install dependencies
+install.packages(c("analogsea", "yaml", "ssh", "jsonlite"))
+
+# Install buoyant (adjust path as needed)
+devtools::install_local("path/to/buoyant")
+```
+
+## Step 1: Create Your First Application
+
+```r
+library(buoyant)
+
+# Create a new plumber2 API from template
+create_template("my-first-api", engine = "plumber2")
+
+# This creates:
+# my-first-api/
+#   _server.yml    # Configuration file
+#   api.R          # API implementation
+```
+
+## Step 2: Customize Your Application
+
+Edit `my-first-api/api.R` to add your endpoints:
+
+```r
+#* @get /hello
+function() {
+  list(message = "Hello from buoyant!")
+}
+
+#* @get /add
+#* @param a First number
+#* @param b Second number
+function(a, b) {
+  result <- as.numeric(a) + as.numeric(b)
+  list(result = result)
+}
+```
+
+## Step 3: Test Locally (Optional)
+
+If you have plumber2 installed:
+
+```r
+library(plumber2)
+api("my-first-api")
+```
+
+Visit http://127.0.0.1:8000/api-docs to see your API documentation.
+
+## Step 4: Set Up DigitalOcean
+
+```r
+library(analogsea)
+
+# Authenticate with DigitalOcean
+# This will open a browser for authentication
+do_oauth()
+
+# Check authentication
+droplets()  # Should return a list (may be empty)
+```
+
+### Configure SSH Keys
+
+If you haven't already, add your SSH key to DigitalOcean:
+
+```r
+library(ssh)
+
+# Check for local SSH keys
+ssh_key_info()
+
+# If you have keys, add them to DigitalOcean
+# Get your public key
+readLines("~/.ssh/id_rsa.pub")
+
+# Add via web interface or:
+key_create(
+  name = "my-laptop",
+  public_key = readLines("~/.ssh/id_rsa.pub")
+)
+```
+
+## Step 5: Provision a Server
+
+```r
+library(buoyant)
+
+# This will cost money! Check DigitalOcean pricing first.
+# A basic droplet costs around $6/month (as of 2024)
+
+droplet <- do_provision(
+  name = "my-api-server",
+  region = "sfo3",  # San Francisco
+  size = "s-1vcpu-1gb"  # Basic tier
+)
+
+# This will take several minutes...
+# It installs R, nginx, firewall, and sets up the server structure
+```
+
+## Step 6: Deploy Your Application
+
+```r
+# Validate your _server.yml file first
+validate_server_yml("my-first-api")
+
+# Deploy!
+do_deploy_server(
+  droplet = droplet,
+  path = "api",           # URL path: /api
+  localPath = "my-first-api",  # Local directory
+  port = 8000,            # Internal port
+  forward = TRUE          # Make it accessible at root too
+)
+```
+
+The deployment process:
+1. Uploads your application files
+2. Installs the engine package (plumber2)
+3. Creates a systemd service for auto-restart
+4. Configures nginx as a reverse proxy
+5. Starts your application
+
+## Step 7: Access Your API
+
+```r
+# Get the URL
+url <- do_ip(droplet, "/api")
+print(url)  # e.g., "http://165.232.134.23/api"
+
+# Open in browser
+browseURL(paste0(url, "/hello"))
+
+# Or use httr to test
+library(httr)
+GET(paste0(url, "/hello"))
+GET(paste0(url, "/add?a=5&b=3"))
+```
+
+## Step 8: Monitor Your Application
+
+SSH into your droplet to check logs:
+
+```r
+droplet_ssh(droplet, "journalctl -u server-api -f")
+```
+
+Or use analogsea's convenience functions:
+
+```r
+# Check if service is running
+droplet_ssh(droplet, "systemctl status server-api")
+```
+
+## Optional: Add HTTPS
+
+If you have a domain name:
+
+```r
+# Point your domain to the droplet IP
+ip <- do_ip(droplet)
+print(ip)
+
+# After DNS is configured (wait for propagation):
+do_configure_https(
+  droplet = droplet,
+  domain = "api.yourdomain.com",
+  email = "you@example.com",
+  termsOfService = TRUE  # Agree to Let's Encrypt TOS
+)
+```
+
+Now your API is available at `https://api.yourdomain.com/api`
+
+## Managing Your Deployment
+
+### Update Your Application
+
+Make changes locally, then redeploy:
+
+```r
+do_deploy_server(
+  droplet = droplet,
+  path = "api",
+  localPath = "my-first-api",
+  port = 8000,
+  overwrite = TRUE  # Replace existing deployment
+)
+```
+
+### Deploy Multiple Applications
+
+```r
+# Deploy a second application on the same server
+create_template("my-second-api", engine = "plumber2")
+
+do_deploy_server(
+  droplet = droplet,
+  path = "v2",
+  localPath = "my-second-api",
+  port = 8001  # Different port!
+)
+
+# Access at:
+# http://<ip>/api   (first app)
+# http://<ip>/v2    (second app)
+```
+
+### Remove an Application
+
+```r
+# Stop and remove
+do_remove_server(droplet, path = "api", delete = TRUE)
+```
+
+### Delete the Server
+
+When you're completely done:
+
+```r
+library(analogsea)
+droplet_delete(droplet)
+```
+
+**Warning**: This permanently deletes your server and all data!
+
+## Troubleshooting
+
+### Connection Issues
+
+```r
+# Refresh droplet information
+droplet <- droplet(droplet$id)
+
+# Check IP is accessible
+ip <- do_ip(droplet)
+system(paste("ping -c 3", ip))
+```
+
+### Application Not Starting
+
+```r
+# Check service logs
+droplet_ssh(droplet, "journalctl -u server-api -n 50")
+
+# Check if service exists
+droplet_ssh(droplet, "systemctl list-units | grep server-")
+
+# Check if port is listening
+droplet_ssh(droplet, "netstat -tlnp | grep 8000")
+```
+
+### Nginx Issues
+
+```r
+# Check nginx status
+droplet_ssh(droplet, "systemctl status nginx")
+
+# Check nginx logs
+droplet_ssh(droplet, "tail -f /var/log/nginx/error.log")
+
+# Test nginx configuration
+droplet_ssh(droplet, "nginx -t")
+```
+
+### Validation Errors
+
+```r
+# Check your _server.yml syntax
+validate_server_yml("my-first-api", check_engine = TRUE, verbose = TRUE)
+
+# Read and inspect configuration
+config <- read_server_yml("my-first-api")
+str(config)
+```
+
+## Best Practices
+
+1. **Version Control**: Keep your applications in git repositories
+2. **Environment Variables**: Use environment variables for secrets (not in `_server.yml`)
+3. **Testing**: Test locally before deploying
+4. **Monitoring**: Set up monitoring and alerts for production applications
+5. **Backups**: Regularly backup your application code and data
+6. **Security**: Use HTTPS in production, keep packages updated
+7. **Resource Sizing**: Start small, scale up as needed
+
+## Next Steps
+
+- Read the [README](README.md) for complete function reference
+- Explore different [engines](https://plumber2.posit.co/articles/server_yml.html)
+- Set up CI/CD for automated deployments
+- Configure custom domains and SSL certificates
+- Monitor application performance and logs
+
+## Getting Help
+
+- Package issues: https://github.com/rstudio/buoyant/issues
+- DigitalOcean docs: https://docs.digitalocean.com
+- plumber2 docs: https://plumber2.posit.co
+- analogsea docs: https://github.com/sckott/analogsea
+
+Happy deploying! 🚀

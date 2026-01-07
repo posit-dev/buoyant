@@ -4,6 +4,28 @@
 
 `buoyant` is an R package for deploying `_server.yml` compliant web applications to DigitalOcean. It supports any R web framework that implements the `_server.yml` standard (plumber2, fiery, etc.).
 
+## Development Commands
+
+### Testing
+- `devtools::check()` - Run full R CMD check (standard R package check)
+- `devtools::test()` - Run unit tests using testthat
+- `devtools::test(filter = "then")` - Run tests matching pattern (e.g., all tests in test-then.R)
+- `testthat::test_file("tests/testthat/test-*.R")` - Run a single test file
+- `spelling::spell_check_test(vignettes = TRUE, error = TRUE, skip_on_cran = TRUE)` - Check spelling
+
+### Package Development
+- `devtools::load_all()` - Load package for development
+- `devtools::document()` - Generate documentation from roxygen2 comments
+- `devtools::build()` - Build source package
+- `devtools::install()` - Install package locally
+- `pkgdown::build_site()` - Build package documentation website
+
+### GitHub Actions
+The package uses RStudio's shiny-workflows for CI/CD:
+- Automated R CMD check on push/PR
+- Website deployment via pkgdown
+- Code formatting checks
+
 ## Package Structure
 
 ```

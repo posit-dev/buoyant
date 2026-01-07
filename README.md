@@ -26,7 +26,7 @@ The `_server.yml` standard is a lightweight specification for R web servers. The
 engine: plumber2
 ```
 
-Each engine package (like `plumber2` or `fiery`) can define additional fields specific to their needs. The engine must provide a `launch_server()` function that accepts:
+Each engine package (like `plumber2` or `fiery`) can define additional fields specific to their needs. The engine must provide a `launch_server(settings, host = NULL, port = NULL, ...)` function that accepts:
 
 - `settings`: Path to the `_server.yml` file
 - `host`: IP address to bind to
@@ -35,26 +35,18 @@ Each engine package (like `plumber2` or `fiery`) can define additional fields sp
 
 ## Features
 
-- **Deploy to DigitalOcean**: Provision droplets and deploy `_server.yml` applications
+- **Deploy to DigitalOcean**: Provision droplets and deploy `_server.yml` compliant applications
 - **Validation**: Validate `_server.yml` files before deployment
-- **Templates**: Create new projects from templates for popular engines
-- **Multi-framework**: Works with any `_server.yml`-compliant engine
 
 ## Quick Start
 
-### Create a New Application
+### Validate Your Application
 
 ```r
 library(buoyant)
 
-# See available templates
-list_templates()
-
-# Create a new plumber2 application
-create_template("my-api", engine = "plumber2")
-
-# Validate the _server.yml file
-validate_server_yml("my-api")
+# Validate the _server.yml file in your application directory
+validate_server_yml("path/to/my-api")
 ```
 
 ### Deploy to DigitalOcean
@@ -140,33 +132,22 @@ To make your own package compatible, see the [_server.yml specification](https:/
 - `validate_server_yml()`: Validate a `_server.yml` file
 - `read_server_yml()`: Read and parse a `_server.yml` file
 
-### Template Functions
-
-- `create_template()`: Create a new application from a template
-- `list_templates()`: List available templates
-
 ## Example: Complete Deployment Workflow
 
 ```r
 library(buoyant)
 library(analogsea)
 
-# 1. Create a new application locally
-create_template("my-api", engine = "plumber2")
-
-# 2. Customize your application
-# Edit my-api/_server.yml and my-api/api.R
-
-# 3. Validate locally
+# 1. Validate your application locally
 validate_server_yml("my-api", check_engine = TRUE)
 
-# 4. Set up DigitalOcean authentication
+# 2. Set up DigitalOcean authentication
 do_oauth()
 
-# 5. Provision a server
+# 3. Provision a server
 droplet <- do_provision(region = "sfo3")
 
-# 6. Deploy your application
+# 4. Deploy your application
 do_deploy_server(
   droplet = droplet,
   path = "api",
@@ -175,11 +156,11 @@ do_deploy_server(
   forward = TRUE  # Make it accessible at root path
 )
 
-# 7. Visit your API
+# 5. Visit your API
 url <- do_ip(droplet, "/api")
 browseURL(url)
 
-# 8. When you're done (this deletes the server)
+# 6. When you're done (this deletes the server)
 droplet_delete(droplet)
 ```
 
@@ -253,7 +234,7 @@ This follows the `_server.yml` standard and allows any compliant engine to be de
 
 `buoyant` is inspired by `plumberDeploy` but differs in key ways:
 
-- **Framework Agnostic**: Works with any `_server.yml`-compliant engine, not just plumber
+- **Framework Agnostic**: Works with any `_server.yml`-compliant engine
 - **Standardized**: Uses the `_server.yml` standard for configuration
 - **Modern**: Built for newer R server frameworks like plumber2 and fiery
 - **Focused**: Currently supports DigitalOcean; other platforms may be added later
@@ -274,11 +255,10 @@ MIT License. See LICENSE.md for details.
 
 ## Related Projects
 
-- [plumber2](https://plumber2.posit.co) - Modern R API framework
-- [plumberDeploy](https://github.com/meztez/plumberDeploy) - Deploy plumber APIs
 - [analogsea](https://github.com/sckott/analogsea) - R client for DigitalOcean
+- [plumber2](https://plumber2.posit.co) - Modern R API framework
 - [fiery](https://fiery.data-imaginist.com) - Flexible web server framework
 
 ## Acknowledgments
 
-This package is inspired by [plumberDeploy](https://github.com/meztez/plumberDeploy) by Bruno Tremblay and Jeff Allen. The `_server.yml` standard was developed as part of the [plumber2](https://plumber2.posit.co) project.
+This package is inspired by [plumberDeploy](https://github.com/meztez/plumberDeploy) (an R package to deploy [plumber](https://www.rplumber.io) APIs) maintained by [Bruno Tremblay](https://github.com/meztez/) and originally developed by Jeff Allen.

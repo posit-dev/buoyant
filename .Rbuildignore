@@ -10,3 +10,6 @@
 ^CLAUDE\.md$
 ^\.vscode$
 ^\.claude$
+^docs$
+^_pkgdown\.yml$
+^pkgdown$

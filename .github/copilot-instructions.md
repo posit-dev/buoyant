@@ -64,7 +64,7 @@ R -e "library(testthat); library(buoyant); test_dir('tests/testthat')"
 R -e "library(testthat); library(buoyant); test_file('tests/testthat/test-validate.R')"
 
 # Check if package loads correctly
-R -e "library(buoyant); print(list_templates())"
+R -e "library(buoyant)"
 ```
 
 ### Documentation Commands
@@ -86,22 +86,14 @@ R -e "rmarkdown::render('vignettes/buoyant.qmd')"
    # Should load successfully with all dependencies
    ```
 
-2. **Template Listing**: Test core template functionality
+2. **Validation Functions**: Test _server.yml validation
    ```r
    library(buoyant)
-   templates <- list_templates()
-   print(templates)
-   # Should return available templates: plumber2, fiery, generic
+   # Test validation on a valid _server.yml file
+   validate_server_yml("path/to/app")
    ```
 
-3. **Validation Functions**: Test _server.yml validation
-   ```r
-   library(buoyant)
-   # Test validation on a valid template
-   validate_server_yml(system.file("templates/plumber2", package = "buoyant"))
-   ```
-
-4. **Integration Testing**: Verify core dependencies work together
+3. **Integration Testing**: Verify core dependencies work together
    ```r
    library(analogsea)
    library(ssh)
@@ -123,9 +115,9 @@ R CMD build --no-build-vignettes .
 # TIMING: ~3-5 seconds
 sudo R -e "install.packages('.', type = 'source', repos = NULL)"
 
-# 3. Test package loading and basic functionality
+# 3. Test package loading
 # TIMING: ~1-2 seconds
-R -e "library(buoyant); print(list_templates())"
+R -e "library(buoyant)"
 
 # 4. Run test suite if testthat is available
 # TIMING: ~5-8 seconds - NEVER CANCEL
@@ -146,17 +138,15 @@ _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-vignettes --no-tests buoyant_*.t
 ## Repository Structure
 
 ### Core Development Files:
-- `R/` - Main R source code (validate.R, digital-ocean.R, templates.R, utils.R)
+- `R/` - Main R source code (validate.R, digital-ocean.R, utils.R)
 - `tests/testthat/` - Unit tests using testthat framework
 - `vignettes/` - Package documentation (buoyant.qmd)
-- `inst/templates/` - Application templates (plumber2, fiery, generic)
 - `inst/server/` - Server configuration templates (nginx.conf, nginx-ssl.conf)
 - `man/` - Generated documentation (do not edit manually)
 
 ### Key Architecture Components:
 - **Validation Functions** (`R/validate.R`): _server.yml validation and parsing
 - **Deployment Functions** (`R/digital-ocean.R`): DigitalOcean provisioning and deployment
-- **Template Functions** (`R/templates.R`): Application template creation and management
 - **Utility Functions** (`R/utils.R`): Helper functions and internal utilities
 
 ### Dependencies (Auto-installed via devtools):
@@ -166,7 +156,7 @@ _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-vignettes --no-tests buoyant_*.t
 ## Package Functionality
 
 ### Core Deployment Workflow:
-1. User creates application locally using `create_template()`
+1. User creates `_server.yml` compliant application locally
 2. User validates `_server.yml` with `validate_server_yml()`
 3. User provisions DigitalOcean droplet with `do_provision()`
 4. Package uploads files to `/var/server-apps/<path>/`
@@ -198,13 +188,6 @@ The `_server.yml` file must include:
 5. Run `devtools::test()` to verify tests pass
 6. Run `devtools::check()` for full validation
 
-### Adding New Templates:
-1. Create directory in `inst/templates/[engine-name]/`
-2. Add `_server.yml` configuration file
-3. Add example R file (api.R, app.R, etc.)
-4. Update `list_templates()` to recognize new template
-5. Add tests for template creation
-6. Document in vignettes/buoyant.qmd
 
 ### Working with Nginx Configs:
 The package includes nginx configuration templates in `inst/server/`:
@@ -265,17 +248,10 @@ Sys.setenv(DO_PAT = "your_token_here")
 ### R Source Files (`R/` directory):
 - `validate.R` - _server.yml validation and parsing functions
 - `digital-ocean.R` - DigitalOcean deployment and provisioning functions
-- `templates.R` - Template creation and management functions
 - `utils.R` - Utility functions and helpers
 
 ### Test Files (`tests/testthat/` directory):
 - `test-validate.R` - Tests for validation functions
-- `test-templates.R` - Tests for template functions
-
-### Template Files (`inst/templates/` directory):
-- `plumber2/` - plumber2 API template
-- `fiery/` - fiery application template
-- `generic/` - Generic _server.yml template
 
 ### Server Configuration Files (`inst/server/` directory):
 - `nginx.conf` - HTTP reverse proxy configuration

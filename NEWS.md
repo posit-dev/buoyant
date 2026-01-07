@@ -6,7 +6,6 @@ Initial release of buoyant - a package for deploying `_server.yml` compliant R w
 
 - Deploy `_server.yml` applications to DigitalOcean
 - Validate `_server.yml` files before deployment
-- Create new applications from templates (plumber2, fiery)
 - Support for HTTPS/SSL via Let's Encrypt
 - Multiple applications on a single server
 - Automatic systemd service creation and nginx configuration
@@ -24,10 +23,6 @@ Initial release of buoyant - a package for deploying `_server.yml` compliant R w
 ### Validation
 - `validate_server_yml()`: Validate `_server.yml` files
 - `read_server_yml()`: Read `_server.yml` configuration
-
-### Templates
-- `create_template()`: Create new application from template
-- `list_templates()`: List available templates
 
 ## Supported Engines
 

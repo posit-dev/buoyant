@@ -1,8 +1,0 @@
-engine: plumber2
-options:
-  host: 0.0.0.0
-  port: 8000
-  docType: swagger
-  docPath: api-docs
-routes:
-  - api.R

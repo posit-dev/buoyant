@@ -29,25 +29,15 @@ install.packages(c("analogsea", "yaml", "ssh", "jsonlite"))
 devtools::install_local("path/to/buoyant")
 ```
 
-## Step 1: Create Your First Application
+## Step 1: Create Your Application
+
+Create a `_server.yml` compliant application. For example, with plumber2:
 
 ```{r}
-library(buoyant)
+# In your application directory, create _server.yml:
+# engine: plumber2
 
-# Create a new plumber2 API from template
-create_template("my-first-api", engine = "plumber2")
-
-# This creates:
-# my-first-api/
-#   _server.yml    # Configuration file
-#   api.R          # API implementation
-```
-
-## Step 2: Customize Your Application
-
-Edit `my-first-api/api.R` to add your endpoints:
-
-```{r}
+# And create api.R with your endpoints:
 #* @get /hello
 function() {
   list(message = "Hello from buoyant!")
@@ -62,7 +52,7 @@ function(a, b) {
 }
 ```
 
-## Step 3: Test Locally (Optional)
+## Step 2: Test Locally (Optional)
 
 If you have plumber2 installed:
 
@@ -73,7 +63,7 @@ api("my-first-api")
 
 Visit <http://127.0.0.1:8000/api-docs> to see your API documentation.
 
-## Step 4: Set Up DigitalOcean
+## Step 3: Set Up DigitalOcean
 
 ```{r}
 library(analogsea)
@@ -107,7 +97,7 @@ key_create(
 )
 ```
 
-## Step 5: Provision a Server
+## Step 4: Provision a Server
 
 ```{r}
 library(buoyant)
@@ -125,7 +115,7 @@ droplet <- do_provision(
 # It installs R, nginx, firewall, and sets up the server structure
 ```
 
-## Step 6: Deploy Your Application
+## Step 5: Deploy Your Application
 
 ```{r}
 # Validate your _server.yml file first
@@ -149,7 +139,7 @@ The deployment process:
 4. Configures nginx as a reverse proxy
 5. Starts your application
 
-## Step 7: Access Your API
+## Step 6: Access Your API
 
 ```{r}
 # Get the URL
@@ -165,7 +155,7 @@ GET(paste0(url, "/hello"))
 GET(paste0(url, "/add?a=5&b=3"))
 ```
 
-## Step 8: Monitor Your Application
+## Step 7: Monitor Your Application
 
 SSH into your droplet to check logs:
 
@@ -220,8 +210,6 @@ do_deploy_server(
 
 ```{r}
 # Deploy a second application on the same server
-create_template("my-second-api", engine = "plumber2")
-
 do_deploy_server(
   droplet = droplet,
   path = "v2",

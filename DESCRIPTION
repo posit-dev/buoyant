@@ -1,31 +1,32 @@
-Package: buoyant
 Type: Package
+Package: buoyant
 Title: Deploy '_server.yml' Compliant Applications
 Version: 0.1.0
-Roxygen: list(markdown = TRUE)
-Authors@R: c(
-  person("Barret", "Schloerke", role = c("cre", "aut"), email = "barret@posit.co"))
-Depends:
-    R (>= 3.0.0)
-Description: Provides tools to deploy R web server applications that follow
-    the '_server.yml' standard. This standard allows different R server
-    frameworks (plumber2, fiery, etc.) to be deployed using a common interface.
-    The package supports deployment to DigitalOcean and includes validation
-    tools to ensure '_server.yml' files are correctly formatted.
+Authors@R:
+    person("Barret", "Schloerke", , "barret@posit.co", role = c("cre", "aut"))
+Description: Provides tools to deploy R web server applications that
+    follow the '_server.yml' standard. This standard allows different R
+    server frameworks (plumber2, fiery, etc.) to be deployed using a
+    common interface.  The package supports deployment to DigitalOcean and
+    includes validation tools to ensure '_server.yml' files are correctly
+    formatted.
 License: MIT + file LICENSE
-Encoding: UTF-8
-LazyData: true
-RoxygenNote: 7.3.3
+URL: https://posit-dev.github.io/buoyant, https://github.com/posit-dev/buoyant
+BugReports: https://github.com/posit-dev/buoyant/issues
+Depends:
+    R (>= 4.1.0)
 Imports:
     analogsea (>= 0.9.4),
-    ssh,
-    yaml,
     jsonlite,
-    lifecycle,
-    utils
+    ssh,
+    yaml
 Suggests:
-    testthat (>= 3.0.0),
+    knitr,
+    quarto,
+    testthat (>= 3.1.0),
     withr
 Config/testthat/edition: 3
-BugReports: https://github.com/rstudio/buoyant/issues
-URL: https://github.com/rstudio/buoyant
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+VignetteBuilder: quarto

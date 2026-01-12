@@ -201,9 +201,30 @@ install_nginx <- function(droplet, ...) {
     "mkdir -p /etc/nginx/sites-available/server-apps/",
     ...
   )
+
+  # Generate nginx root configuration
+  nginx_root_conf <- "# Server application configuration
+
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+
+  server_name _;
+
+  include /etc/nginx/sites-available/server-apps/*.conf;
+
+  location /.well-known/ {
+    root /var/certbot/;
+  }
+}
+"
+
+  tmp_nginx_root <- withr::local_tempfile(fileext = ".conf")
+  writeLines(nginx_root_conf, tmp_nginx_root)
+
   analogsea::droplet_upload(
     droplet,
-    local = system.file("server", "nginx.conf", package = "buoyant"),
+    local = tmp_nginx_root,
     remote = "/etc/nginx/sites-available/server-apps-root",
     ...
   )
@@ -321,16 +342,38 @@ do_configure_https <- function(
   # Trim off any trailing slash if one exists.
   domain <- sub("/$", "", domain)
 
-  # Prepare the nginx conf file.
-  conf <- readLines(system.file(
-    "server",
-    "nginx-ssl.conf",
-    package = "buoyant"
-  ))
-  conf <- gsub("\\$DOMAIN\\$", domain, conf)
+  # Prepare the nginx SSL configuration
+  nginx_ssl_conf <- sprintf(
+    "server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name %s;
+  return 301 https://$server_name$request_uri;
+}
 
-  conffile <- withr::local_tempfile()
-  writeLines(conf, conffile)
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  server_name %s;
+
+  ssl_certificate /etc/letsencrypt/live/%s/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/%s/privkey.pem;
+
+  include /etc/nginx/sites-available/server-apps/*.conf;
+
+  location /.well-known/ {
+    root /var/certbot/;
+  }
+}
+",
+    domain,
+    domain,
+    domain,
+    domain
+  )
+
+  conffile <- withr::local_tempfile(fileext = ".conf")
+  writeLines(nginx_ssl_conf, conffile)
 
   analogsea::droplet_ssh(droplet, "snap install core")
   analogsea::droplet_ssh(droplet, "snap refresh core")
@@ -594,7 +637,7 @@ WantedBy=multi-user.target
     port
   )
 
-  tmp_nginx <- withr::local_tempfile()
+  tmp_nginx <- withr::local_tempfile(fileext = ".conf")
   writeLines(nginx_conf, tmp_nginx)
 
   analogsea::droplet_upload(
@@ -648,7 +691,7 @@ do_forward <- function(droplet, path, ...) {
     path
   )
 
-  forwardfile <- withr::local_tempfile()
+  forwardfile <- withr::local_tempfile(fileext = ".conf")
   writeLines(nginx_conf, forwardfile)
 
   analogsea::droplet_upload(
@@ -658,15 +701,7 @@ do_forward <- function(droplet, path, ...) {
     ...
   )
 
-  # # Note: This is a simplified implementation. In production, you'd want to:
-  # # 1. Look up the actual port from the service configuration
-  # # 2. Handle existing forwards properly
-  # # For now, we'll just update the root location
-
-  # message(
-  #   "Note: Forward functionality needs the port from the application configuration."
-  # )
-  # message("For now, manually configure nginx to forward / to your application.")
+  analogsea::droplet_ssh(droplet, "systemctl reload nginx", ...)
 
   invisible(droplet)
 }

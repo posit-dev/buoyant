@@ -7,7 +7,9 @@ The buoyant package provides tools for deploying `_server.yml` compliant web app
 ## Working Effectively
 
 ### Essential Setup Commands
+
 Install required R and development dependencies:
+
 ```bash
 # Install R if not available (Ubuntu/Debian)
 sudo apt-get update
@@ -24,6 +26,7 @@ sudo R -e "install.packages(c('analogsea', 'ssh', 'devtools', 'pkgdown'), repos=
 ```
 
 ### Build and Development Commands
+
 Always run these commands from the package root directory:
 
 ```bash
@@ -55,6 +58,7 @@ R -e "devtools::test()"
 ```
 
 ### Testing Commands
+
 ```bash
 # Run full test suite from source directory
 # TIMING: ~5-8 seconds - NEVER CANCEL, Set timeout to 30+ seconds
@@ -68,6 +72,7 @@ R -e "library(buoyant)"
 ```
 
 ### Documentation Commands
+
 ```bash
 # Build package documentation website (if pkgdown available)
 # NEVER CANCEL: Takes 3-8 minutes. Set timeout to 15+ minutes.
@@ -80,13 +85,16 @@ R -e "rmarkdown::render('vignettes/buoyant.qmd')"
 ## Validation Requirements
 
 ### Always Test These Scenarios After Making Changes:
+
 1. **Basic Package Loading**: Verify the package loads without errors
+
    ```r
    library(buoyant)
    # Should load successfully with all dependencies
    ```
 
-2. **Validation Functions**: Test _server.yml validation
+2. **Validation Functions**: Test \_server.yml validation
+
    ```r
    library(buoyant)
    # Test validation on a valid _server.yml file
@@ -104,6 +112,7 @@ R -e "rmarkdown::render('vignettes/buoyant.qmd')"
    ```
 
 ### Mandatory Pre-Commit Checks:
+
 **CRITICAL**: Run these validation steps before committing any changes:
 
 ```bash
@@ -129,6 +138,7 @@ _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-vignettes --no-tests buoyant_*.t
 ```
 
 **Expected timing summary**:
+
 - Basic build: ~0.3 seconds - **INSTANT**
 - Package install: ~3-5 seconds - **VERY FAST**
 - Test suite: ~5-8 seconds - **NEVER CANCEL, timeout 30+ seconds**
@@ -138,6 +148,7 @@ _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-vignettes --no-tests buoyant_*.t
 ## Repository Structure
 
 ### Core Development Files:
+
 - `R/` - Main R source code (validate.R, digital-ocean.R, utils.R)
 - `tests/testthat/` - Unit tests using testthat framework
 - `vignettes/` - Package documentation (buoyant.qmd)
@@ -145,17 +156,20 @@ _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-vignettes --no-tests buoyant_*.t
 - `man/` - Generated documentation (do not edit manually)
 
 ### Key Architecture Components:
-- **Validation Functions** (`R/validate.R`): _server.yml validation and parsing
+
+- **Validation Functions** (`R/validate.R`): \_server.yml validation and parsing
 - **Deployment Functions** (`R/digital-ocean.R`): DigitalOcean provisioning and deployment
 - **Utility Functions** (`R/utils.R`): Helper functions and internal utilities
 
 ### Dependencies (Auto-installed via devtools):
+
 - **Core**: analogsea (>= 0.9.4), ssh, yaml, jsonlite, lifecycle
 - **Development**: testthat, devtools, knitr, rmarkdown
 
 ## Package Functionality
 
 ### Core Deployment Workflow:
+
 1. User creates `_server.yml` compliant application locally
 2. User validates `_server.yml` with `validate_server_yml()`
 3. User provisions DigitalOcean droplet with `do_provision()`
@@ -166,21 +180,23 @@ _R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-vignettes --no-tests buoyant_*.t
 8. Application is accessible via `do_ip(droplet, "/path")`
 
 ### Supported Engines:
+
 The package works with any R package that implements the `_server.yml` standard:
+
 - **plumber2**: Modern plumber API framework
 - **fiery**: Flexible web server framework
 - Any custom engine implementing `launch_server()` function
 
 ### Configuration Standard:
+
 The `_server.yml` file must include:
+
 - `engine`: Package name implementing launch_server()
-- `entrypoint`: Main R file to execute
-- `host`: Host address (usually 127.0.0.1)
-- `port`: Port number for the application
 
 ## Common Development Tasks
 
 ### Adding New Functions:
+
 1. Add function to appropriate R file in `R/` directory
 2. Document with roxygen2 comments (use `@export` if public)
 3. Run `devtools::document()` to update NAMESPACE and man pages
@@ -188,9 +204,10 @@ The `_server.yml` file must include:
 5. Run `devtools::test()` to verify tests pass
 6. Run `devtools::check()` for full validation
 
-
 ### Working with Nginx Configs:
+
 The package includes nginx configuration templates in `inst/server/`:
+
 - `nginx.conf`: HTTP reverse proxy configuration
 - `nginx-ssl.conf`: HTTPS configuration with Let's Encrypt
 
@@ -199,6 +216,7 @@ These are deployed by `do_deploy_server()` and `do_configure_https()`.
 ## Troubleshooting
 
 ### Common Issues:
+
 - **Missing Dependencies**: Install core packages via apt first, then try CRAN for others
   ```bash
   sudo apt-get install -y r-cran-yaml r-cran-jsonlite r-cran-testthat
@@ -211,6 +229,7 @@ These are deployed by `do_deploy_server()` and `do_configure_https()`.
 - **Build Failures**: Check DESCRIPTION file dependencies match actual imports
 
 ### Alternative Commands When devtools Unavailable:
+
 ```bash
 # Use R CMD instead of devtools equivalents:
 R CMD build --no-build-vignettes .                    # instead of devtools::build()
@@ -220,7 +239,9 @@ sudo R -e "install.packages('.', type='source', repos=NULL)"  # instead of devto
 ```
 
 ### Network/CRAN Issues:
+
 If CRAN mirrors are unavailable, use apt packages or local installation:
+
 ```bash
 # Prefer apt packages over CRAN when possible
 sudo apt-cache search r-cran- | grep <package_name>
@@ -230,7 +251,9 @@ sudo R -e "install.packages('.', type='source', repos=NULL)"
 ```
 
 ### DigitalOcean Authentication:
+
 The package uses `analogsea` for DigitalOcean API access:
+
 ```r
 # Set up authentication
 library(analogsea)
@@ -243,17 +266,21 @@ Sys.setenv(DO_PAT = "your_token_here")
 ## Important Files Reference
 
 ### Repository Structure:
+
 - **Root**: `.Rbuildignore`, `.github/`, `.gitignore`, `CLAUDE.md`, `DESCRIPTION`, `LICENSE`, `LICENSE.md`, `NAMESPACE`, `NEWS.md`, `R/`, `README.md`, `buoyant.Rproj`, `inst/`, `man/`, `tests/`, `vignettes/`
 
 ### R Source Files (`R/` directory):
-- `validate.R` - _server.yml validation and parsing functions
+
+- `validate.R` - \_server.yml validation and parsing functions
 - `digital-ocean.R` - DigitalOcean deployment and provisioning functions
 - `utils.R` - Utility functions and helpers
 
 ### Test Files (`tests/testthat/` directory):
+
 - `test-validate.R` - Tests for validation functions
 
 ### Server Configuration Files (`inst/server/` directory):
+
 - `nginx.conf` - HTTP reverse proxy configuration
 - `nginx-ssl.conf` - HTTPS configuration with SSL
 

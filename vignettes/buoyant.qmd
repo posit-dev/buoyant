@@ -13,6 +13,41 @@ knitr:
 
 This guide walks you through deploying your first `_server.yml` application using `buoyant`.
 
+## What is buoyant?
+
+`buoyant` is an R package for deploying web server applications to DigitalOcean. It works with any R web framework that implements the `_server.yml` standard, including:
+
+- [plumber2](https://plumber2.posit.co) - Modern R API framework
+- [fiery](https://fiery.data-imaginist.com) - Flexible web server framework
+- Any custom package implementing the `_server.yml` standard
+
+When you deploy an application with `buoyant`:
+
+1. Your application files are uploaded to the server
+2. The engine package is installed if not present
+3. A systemd service is created for automatic restarts
+4. Nginx is configured as a reverse proxy
+5. Your application is accessible via HTTP (or HTTPS with `do_configure_https()`)
+
+## The `_server.yml` Standard
+
+The `_server.yml` standard is a lightweight specification that allows different R web frameworks to be deployed consistently. At minimum, your application needs a `_server.yml` file with an `engine` field:
+
+```yaml
+engine: plumber2
+```
+
+Each engine can define additional configuration fields. For example, a plumber2 application might have:
+
+```yaml
+engine: plumber2
+```
+
+The engine package must export a `launch_server(settings, host = NULL, port = NULL, ...)` function that:
+- Accepts the path to `_server.yml` as the first argument
+- Can override host and port via parameters
+- Starts the web server
+
 ## Prerequisites
 
 1. **R** (>= 3.0.0)
@@ -33,11 +68,13 @@ devtools::install_local("path/to/buoyant")
 
 Create a `_server.yml` compliant application. For example, with plumber2:
 
-```{r}
-# In your application directory, create _server.yml:
-# engine: plumber2
+```{yaml}
+#| file: _server.yml
+engine: plumber2
+```
 
-# And create api.R with your endpoints:
+```{r}
+#| file: plumber.R
 #* @get /hello
 function() {
   list(message = "Hello from buoyant!")
@@ -58,10 +95,10 @@ If you have plumber2 installed:
 
 ```{r}
 library(plumber2)
-api("my-first-api")
+api("plumber.R") |> api_run()
 ```
 
-Visit <http://127.0.0.1:8000/api-docs> to see your API documentation.
+Visit <http://127.0.0.1:8080/api-docs> to see your API documentation.
 
 ## Step 3: Set Up DigitalOcean
 
@@ -73,29 +110,24 @@ library(analogsea)
 do_oauth()
 
 # Check authentication
-droplets()  # Should return a list (may be empty)
+droplets() # Should return a list (may be empty)
 ```
 
 ### Configure SSH Keys
 
-If you haven't already, add your SSH key to DigitalOcean:
+Make sure you provide digitial ocean your public key at https://cloud.digitalocean.com/ssh_keys. Github has some good advice on creating a new public key if you don't already have one: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent.
 
-```{r}
-library(ssh)
+Be sure to store your `Host` to `digitalocean.com` and point to your private key that you created:
 
-# Check for local SSH keys
-ssh_key_info()
-
-# If you have keys, add them to DigitalOcean
-# Get your public key
-readLines("~/.ssh/id_rsa.pub")
-
-# Add via web interface or:
-key_create(
-  name = "my-laptop",
-  public_key = readLines("~/.ssh/id_rsa.pub")
-)
 ```
+Host github.com
+  UseKeychain yes
+  IdentityFile ~/.ssh/newly_created_key_file
+```
+
+If you didn't use a password when creating your SSH key, you can skip the `UseKeychain` line.
+
+You can verify your DigitalOcean SSH key exists with the proper host with by calling `buoyant::do_keyfile()`.
 
 ## Step 4: Provision a Server
 
@@ -103,15 +135,15 @@ key_create(
 library(buoyant)
 
 # This will cost money! Check DigitalOcean pricing first.
-# A basic droplet costs around $6/month (as of 2024)
+# A basic droplet costs around $6/month (as of 2025)
 
 droplet <- do_provision(
   name = "my-api-server",
-  region = "sfo3",  # San Francisco
-  size = "s-1vcpu-1gb"  # Basic tier
+  region = "sfo3", # San Francisco
+  size = "s-1vcpu-1gb" # Basic tier
 )
 
-# This will take several minutes...
+# This will take a few minutes...
 # It installs R, nginx, firewall, and sets up the server structure
 ```
 
@@ -119,15 +151,16 @@ droplet <- do_provision(
 
 ```{r}
 # Validate your _server.yml file first
-validate_server_yml("my-first-api")
+validate_server_yml("./")
 
 # Deploy!
 do_deploy_server(
+  overwrite = TRUE,
   droplet = droplet,
-  path = "api",           # URL path: /api
-  localPath = "my-first-api",  # Local directory
-  port = 8000,            # Internal port
-  forward = TRUE          # Make it accessible at root too
+  path = "api", # URL sub-path: /api
+  local_path = "./_dev/barret", # Local directory
+  port = 8000, # Internal port
+  forward = TRUE # Make it accessible at root too
 )
 ```
 
@@ -144,7 +177,7 @@ The deployment process:
 ```{r}
 # Get the URL
 url <- do_ip(droplet, "/api")
-print(url)  # e.g., "http://165.232.134.23/api"
+print(url) # e.g., "http://165.232.134.23/api"
 
 # Open in browser
 browseURL(paste0(url, "/hello"))
@@ -184,133 +217,31 @@ do_configure_https(
   droplet = droplet,
   domain = "api.yourdomain.com",
   email = "you@example.com",
-  termsOfService = TRUE  # Agree to Let's Encrypt TOS
+  terms_of_service = TRUE # Agree to Let's Encrypt TOS
 )
 ```
 
 Now your API is available at `https://api.yourdomain.com/api`
 
-## Managing Your Deployment
+## What's Next?
 
-### Update Your Application
+You've successfully deployed your first application! Here are some next steps:
 
-Make changes locally, then redeploy:
+- **Update your application**: Redeploy with `overwrite = TRUE` when you make changes
+- **Deploy multiple apps**: Use different ports and paths on the same droplet
+- **Add HTTPS**: Use `do_configure_https()` with your domain name
+- **Monitor your app**: Check logs with `journalctl -u server-myapp`
 
-```{r}
-do_deploy_server(
-  droplet = droplet,
-  path = "api",
-  localPath = "my-first-api",
-  port = 8000,
-  overwrite = TRUE  # Replace existing deployment
-)
-```
+For detailed information, see:
 
-### Deploy Multiple Applications
+- **[Advanced Usage](advanced-usage.html)** - Managing deployments, multiple apps, HTTPS, and more
+- **[Troubleshooting](troubleshooting.html)** - Common issues and solutions
 
-```{r}
-# Deploy a second application on the same server
-do_deploy_server(
-  droplet = droplet,
-  path = "v2",
-  localPath = "my-second-api",
-  port = 8001  # Different port!
-)
-
-# Access at:
-# http://<ip>/api   (first app)
-# http://<ip>/v2    (second app)
-```
-
-### Remove an Application
-
-```{r}
-# Stop and remove
-do_remove_server(droplet, path = "api", delete = TRUE)
-```
-
-### Delete the Server
-
-When you're completely done:
-
-```{r}
-library(analogsea)
-droplet_delete(droplet)
-```
-
-**Warning**: This permanently deletes your server and all data!
-
-## Troubleshooting
-
-### Connection Issues
-
-```{r}
-# Refresh droplet information
-droplet <- droplet(droplet$id)
-
-# Check IP is accessible
-ip <- do_ip(droplet)
-system(paste("ping -c 3", ip))
-```
-
-### Application Not Starting
-
-```{r}
-# Check service logs
-droplet_ssh(droplet, "journalctl -u server-api -n 50")
-
-# Check if service exists
-droplet_ssh(droplet, "systemctl list-units | grep server-")
-
-# Check if port is listening
-droplet_ssh(droplet, "netstat -tlnp | grep 8000")
-```
-
-### Nginx Issues
-
-```{r}
-# Check nginx status
-droplet_ssh(droplet, "systemctl status nginx")
-
-# Check nginx logs
-droplet_ssh(droplet, "tail -f /var/log/nginx/error.log")
-
-# Test nginx configuration
-droplet_ssh(droplet, "nginx -t")
-```
-
-### Validation Errors
-
-```{r}
-# Check your _server.yml syntax
-validate_server_yml("my-first-api", check_engine = TRUE, verbose = TRUE)
-
-# Read and inspect configuration
-config <- read_server_yml("my-first-api")
-str(config)
-```
-
-## Best Practices
-
-1. **Version Control**: Keep your applications in git repositories
-2. **Environment Variables**: Use environment variables for secrets (not in `_server.yml`)
-3. **Testing**: Test locally before deploying
-4. **Monitoring**: Set up monitoring and alerts for production applications
-5. **Backups**: Regularly backup your application code and data
-6. **Security**: Use HTTPS in production, keep packages updated
-7. **Resource Sizing**: Start small, scale up as needed
-
-## Next Steps
-
-- Read the [README](../README.md) for complete function reference
-- Explore different [engines](https://plumber2.posit.co/articles/server_yml.html)
-- Set up CI/CD for automated deployments
-- Configure custom domains and SSL certificates
-- Monitor application performance and logs
 
 ## Getting Help
 
-- Package issues: <https://github.com/rstudio/buoyant/issues>
+- Package issues: <https://github.com/posit-dev/buoyant/issues>
 - DigitalOcean docs: <https://docs.digitalocean.com>
 - plumber2 docs: <https://plumber2.posit.co>
 - analogsea docs: <https://github.com/sckott/analogsea>
+- `_server.yml` specification: <https://plumber2.posit.co/articles/server_yml.html>

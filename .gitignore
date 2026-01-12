@@ -8,3 +8,5 @@ inst/doc
 .vscode
 .claude
 docs
+.httr-oauth
+_dev

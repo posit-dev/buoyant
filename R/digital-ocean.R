@@ -1,20 +1,17 @@
-# can't really test these.
-# nocov start
-
 #' Provision a DigitalOcean server for _server.yml applications
 #'
 #' Create (if required), install the necessary prerequisites, and
 #' deploy a _server.yml-based R server application on a DigitalOcean virtual machine.
 #' You may sign up for a Digital Ocean account
-#' [here](https://www.digitalocean.com/?refcode=add0b50f54c4&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=CopyPaste).
+#' [here](https://m.do.co/c/6119f0430dad).
 #' You should configure an account ssh key with [analogsea::key_create()] prior to using this method.
 #' This command is idempotent, so feel free to run it on a single server multiple times.
 #'
 #' @param droplet The DigitalOcean droplet that you want to provision
 #'   (see [analogsea::droplet()]). If empty, a new DigitalOcean server will be created.
-#' @param example If `TRUE`, will deploy an example _server.yml application
-#'   to the server on port 8000 (if available in inst/examples).
 #' @param ... Arguments passed into the [analogsea::droplet_create()] function.
+#' @param keyfile Path to private key for authentication. By default, uses the
+#'   key for "digitalocean.com" from [ssh::ssh_key_info()].
 #'
 #' @details Provisions a Ubuntu 24.04-x64 droplet with the following customizations:
 #'  - A recent version of R installed
@@ -33,67 +30,70 @@
 #' @return The DigitalOcean droplet
 #' @export
 #' @examples \dontrun{
-#'   auth = try(analogsea::do_oauth())
-#'   if (!inherits(auth, "try-error") &&
-#'       inherits(auth, "request")) {
-#'     analogsea::droplets()
-#'     droplet = do_provision(region = "sfo3", example = FALSE)
-#'     analogsea::droplets()
-#'     # Deploy a _server.yml application
-#'     do_deploy_server(droplet, "myapp",
-#'                      "path/to/app/with/_server.yml",
-#'                      port=8000, forward=TRUE)
-#'     if (interactive()) {
-#'         utils::browseURL(do_ip(droplet, "/myapp"))
-#'     }
-#'     analogsea::droplet_delete(droplet)
+#'   auth <- analogsea::do_oauth()
+#'
+#'   analogsea::droplets()
+#'   droplet <- do_provision(region = "sfo3")
+#'   analogsea::droplets()
+#'
+#'   # Deploy a _server.yml application
+#'   do_deploy_server(
+#'     droplet,
+#'     "myapp",
+#'     "local/path/to/plumber.R",
+#'     port=8000,
+#'     forward=TRUE
+#'   )
+#'   if (interactive()) {
+#'       utils::browseURL(do_ip(droplet, "/myapp"))
 #'   }
+#'
+#'   analogsea::droplet_delete(droplet)
 #' }
-do_provision <- function(droplet, example = FALSE, ...){
-
-  if (missing(droplet) || is.null(droplet)){
-
+do_provision <- function(droplet, ..., keyfile = do_keyfile()) {
+  if (missing(droplet) || is.null(droplet)) {
     # No droplet provided; create a new server
     message("THIS ACTION COSTS YOU MONEY!")
-    message("Provisioning a new server for which you will get a bill from DigitalOcean.")
+    message(
+      "Provisioning a new server for which you will get a bill from DigitalOcean."
+    )
 
-    createArgs <- list(...)
-    createArgs$tags <- c(createArgs$tags, "buoyant", "server-yml")
-    createArgs$image <- "ubuntu-24-04-x64"
-    keyfile <- createArgs$keyfile
+    create_args <- list(..., keyfile = keyfile)
+    create_args$tags <- c(create_args$tags, "buoyant", "server-yml")
+    create_args$image <- "ubuntu-24-04-x64"
 
     # Check if local has ssh keys configured or keyfile provided
-    if (!length(ssh::ssh_key_info()) && is.null(keyfile)) {
-      stop("No local ssh key found with `ssh::ssh_key_info()` and `keyfile` argument not provided.")
+    if (!length(do_keyfile()) && is.null(keyfile)) {
+      stop(
+        "No local ssh key found with `ssh::ssh_key_info()` and `keyfile` argument not provided."
+      )
     }
 
     # Check if DO has ssh keys configured
     if (!length(analogsea::keys())) {
-      stop("Please add an ssh key to your Digital Ocean account before using this method. See `analogsea::key_create` method.")
+      stop(
+        "Please add an ssh key to your Digital Ocean account before using this method. See `analogsea::key_create` method."
+      )
     }
 
-    droplet <- do.call(analogsea::droplet_create, createArgs)
+    droplet <- do.call(analogsea::droplet_create, create_args)
     Sys.sleep(3)
 
     # Refresh the droplet; sometimes the original one doesn't yet have a network interface.
-    droplet <- with_retries(analogsea::droplet(id=droplet$id))
+    droplet <- with_retries(analogsea::droplet(id = droplet$id))
   }
 
   # Provision
-  lines <- with_retries(droplet_capture(droplet, 'swapon | grep "/swapfile" | wc -l', keyfile = keyfile))
-  if (lines != "1"){
+  lines <- with_retries(droplet_capture(
+    droplet,
+    'swapon | grep "/swapfile" | wc -l',
+    keyfile = keyfile
+  ))
+  if (lines != "1") {
     analogsea::ubuntu_add_swap(droplet)
   }
 
-  do_install_server_deps(droplet, ...)
-
-  # if (example){
-  #   # Deploy an example if one exists
-  #   example_path <- system.file("examples", "plumber2", package = "buoyant")
-  #   if (dir.exists(example_path) && file.exists(file.path(example_path, "_server.yml"))) {
-  #     do_deploy_server(droplet, "hello", example_path, port=8000, forward=TRUE, keyfile = keyfile)
-  #   }
-  # }
+  do_install_server_deps(droplet, keyfile = keyfile)
 
   invisible(droplet)
 }
@@ -106,34 +106,38 @@ do_provision <- function(droplet, example = FALSE, ...){
 #'
 #' @inheritParams do_provision
 #' @export
-do_install_server_deps = function(droplet, ...) {
+do_install_server_deps = function(droplet, keyfile = do_keyfile()) {
   analogsea::droplet_ssh(
     droplet,
     "sudo echo 'DEBIAN_FRONTEND=noninteractive' >> /etc/environment",
-    "curl -O https://cdn.rstudio.com/r/ubuntu-2404/pkgs/r-%s.%s_1_amd64.deb" |> sprintf(R.version[["major"]], R.version[["minor"]]),
-    ...
+    "curl -O https://cdn.rstudio.com/r/ubuntu-2404/pkgs/r-%s.%s_1_amd64.deb" |>
+      sprintf(R.version[["major"]], R.version[["minor"]]),
+    keyfile = keyfile
   )
   with_retries(
     analogsea::droplet_ssh(
       droplet,
       "sudo apt-get update -y",
-      "sudo apt-get install -y ./r-%s.%s_1_amd64.deb" |> sprintf(R.version[["major"]], R.version[["minor"]]),
-      ...
+      "sudo apt-get install -y ./r-%s.%s_1_amd64.deb" |>
+        sprintf(R.version[["major"]], R.version[["minor"]]),
+      keyfile = keyfile
     )
   )
   analogsea::droplet_ssh(
     droplet,
-    "sudo ln -s -f /opt/R/%s.%s/bin/R /usr/local/bin/R" |> sprintf(R.version[["major"]], R.version[["minor"]]),
-    "sudo ln -s -f /opt/R/%s.%s/bin/Rscript /usr/local/bin/Rscript" |> sprintf(R.version[["major"]], R.version[["minor"]]),
-    ...
+    "sudo ln -s -f /opt/R/%s.%s/bin/R /usr/local/bin/R" |>
+      sprintf(R.version[["major"]], R.version[["minor"]]),
+    "sudo ln -s -f /opt/R/%s.%s/bin/Rscript /usr/local/bin/Rscript" |>
+      sprintf(R.version[["major"]], R.version[["minor"]]),
+    keyfile = keyfile
   )
-  install_common_deps(droplet, ...)
-  install_server_structure(droplet, ...)
-  install_nginx(droplet, ...)
-  install_firewall(droplet, ...)
+  install_common_deps(droplet, keyfile = keyfile)
+  install_server_structure(droplet, keyfile = keyfile)
+  install_nginx(droplet, keyfile = keyfile)
+  install_firewall(droplet, keyfile = keyfile)
 }
 
-install_common_deps <- function(droplet, ...){
+install_common_deps <- function(droplet, ...) {
   # Install common system libraries needed by R packages
   with_retries(
     analogsea::ubuntu_apt_get_install(
@@ -142,7 +146,7 @@ install_common_deps <- function(droplet, ...){
       "make",
       "libsodium-dev",
       "libcurl4-openssl-dev",
-      "libyaml-dev",  # For yaml package
+      "libyaml-dev", # For yaml package
       ...
     )
   )
@@ -158,41 +162,56 @@ install_common_deps <- function(droplet, ...){
 
 #' Captures the output from running some command via SSH
 #' @noRd
-droplet_capture <- function(droplet, command, ...){
+droplet_capture <- function(droplet, command, ...) {
   tf <- tempdir()
-  randName <- paste(sample(c(letters, LETTERS), size=10, replace=TRUE), collapse="")
-  tff <- file.path(tf, randName)
+  rand_name <- paste(
+    sample(c(letters, LETTERS), size = 10, replace = TRUE),
+    collapse = ""
+  )
+  tff <- file.path(tf, rand_name)
   on.exit({
     if (file.exists(tff)) {
       file.remove(tff)
     }
   })
-  analogsea::droplet_ssh(droplet, paste0(command, " > /tmp/", randName), ...)
-  analogsea::droplet_download(droplet, paste0("/tmp/", randName), tf, ...)
-  analogsea::droplet_ssh(droplet, paste0("rm /tmp/", randName), ...)
+  analogsea::droplet_ssh(droplet, paste0(command, " > /tmp/", rand_name), ...)
+  analogsea::droplet_download(droplet, paste0("/tmp/", rand_name), tf, ...)
+  analogsea::droplet_ssh(droplet, paste0("rm /tmp/", rand_name), ...)
   lin <- readLines(tff)
   lin
 }
 
-install_server_structure <- function(droplet, ...){
+install_server_structure <- function(droplet, ...) {
   # Create directory structure for server applications
   analogsea::droplet_ssh(droplet, "mkdir -p /var/server-apps", ...)
 }
 
-install_firewall <- function(droplet, ...){
+install_firewall <- function(droplet, ...) {
   analogsea::droplet_ssh(droplet, "ufw allow http", ...)
   analogsea::droplet_ssh(droplet, "ufw allow ssh", ...)
   analogsea::droplet_ssh(droplet, "ufw -f enable", ...)
 }
 
-install_nginx <- function(droplet, ...){
+install_nginx <- function(droplet, ...) {
   with_retries(analogsea::ubuntu_apt_get_install(droplet, "nginx", ...))
   analogsea::droplet_ssh(droplet, "rm -f /etc/nginx/sites-enabled/default", ...) # Disable the default site
   analogsea::droplet_ssh(droplet, "mkdir -p /var/certbot", ...)
-  analogsea::droplet_ssh(droplet, "mkdir -p /etc/nginx/sites-available/server-apps/", ...)
-  analogsea::droplet_upload(droplet, local=system.file("server", "nginx.conf", package="buoyant"),
-                            remote="/etc/nginx/sites-available/server-apps-root", ...)
-  analogsea::droplet_ssh(droplet, "ln -sf /etc/nginx/sites-available/server-apps-root /etc/nginx/sites-enabled/", ...)
+  analogsea::droplet_ssh(
+    droplet,
+    "mkdir -p /etc/nginx/sites-available/server-apps/",
+    ...
+  )
+  analogsea::droplet_upload(
+    droplet,
+    local = system.file("server", "nginx.conf", package = "buoyant"),
+    remote = "/etc/nginx/sites-available/server-apps-root",
+    ...
+  )
+  analogsea::droplet_ssh(
+    droplet,
+    "ln -sf /etc/nginx/sites-available/server-apps-root /etc/nginx/sites-enabled/",
+    ...
+  )
   analogsea::droplet_ssh(droplet, "systemctl reload nginx", ...)
 }
 
@@ -215,7 +234,7 @@ install_nginx <- function(droplet, ...){
 #'   TLS/SSL certificate.
 #' @param email Your email address; given to letsencrypt for "urgent renewal and
 #'   security notices".
-#' @param termsOfService Set to `TRUE` to agree to the letsencrypt subscriber
+#' @param terms_of_service Set to `TRUE` to agree to the letsencrypt subscriber
 #'   agreement. At the time of writing, the current version is available
 #'   [here](https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf).
 #'   Must be set to true to obtain a certificate through letsencrypt.
@@ -226,46 +245,75 @@ install_nginx <- function(droplet, ...){
 #'   `keyfile`.
 #'
 #' @export
-do_configure_https <- function(droplet, domain, email,
-                               termsOfService=FALSE, force=FALSE, ...){
-
-  if (!force){
+do_configure_https <- function(
+  droplet,
+  domain,
+  email,
+  terms_of_service = FALSE,
+  force = FALSE,
+  ...
+) {
+  if (!force) {
     ip <- analogsea::droplet_ip(droplet)
 
     # Try to lookup the ip from the domain name to double-check before proceeding.
     # Unfortunately, the `nsl` command is not installed, so we need to query the droplet
     # from the droplet to get a real-time response.
-    metadata <- droplet_capture(droplet, "curl http://169.254.169.254/metadata/v1.json", ...)
+    metadata <- droplet_capture(
+      droplet,
+      "curl http://169.254.169.254/metadata/v1.json",
+      ...
+    )
 
     parsed <- jsonlite::parse_json(metadata, simplifyVector = TRUE)
-    floating <- unlist(lapply(parsed$floating_ip, function(ipv){ ipv$ip_address }))
+    floating <- unlist(lapply(parsed$floating_ip, function(ipv) {
+      ipv$ip_address
+    }))
     ephemeral <- unlist(parsed$interfaces$public)["ipv4.ip_address"]
 
     if (ip %in% ephemeral) {
-      warning("You should consider using a Floating IP address on your droplet for DNS. Currently ",
-              "you're using the ephemeral IP address of your droplet for DNS which is dangerous; ",
-              "as soon as you terminate your droplet your DNS records will be pointing to an IP ",
-              "address you no longer control. A floating IP will give you the opportunity to ",
-              "create a new droplet and reassign the floating IP used with DNS later.")
-    } else if (! ip %in% floating) {
-      print(list(ip=ip, floatingIPs = unname(floating), ephemeralIPs = unname(ephemeral)))
+      warning(
+        "You should consider using a Floating IP address on your droplet for DNS. Currently ",
+        "you're using the ephemeral IP address of your droplet for DNS which is dangerous; ",
+        "as soon as you terminate your droplet your DNS records will be pointing to an IP ",
+        "address you no longer control. A floating IP will give you the opportunity to ",
+        "create a new droplet and reassign the floating IP used with DNS later."
+      )
+    } else if (!ip %in% floating) {
+      print(list(
+        ip = ip,
+        floating_ips = unname(floating),
+        ephemeral_ips = unname(ephemeral)
+      ))
       stop(
-        "It doesn't appear that the domain name '", domain, "' is pointed to an IP address associated with this droplet. ",
+        "It doesn't appear that the domain name '",
+        domain,
+        "' is pointed to an IP address associated with this droplet. ",
         "This could be due to a DNS misconfiguration or because the changes just haven't propagated through the Internet yet. ",
-        "If you believe this is an error, you can override this check by setting force=TRUE.")
+        "If you believe this is an error, you can override this check by setting force=TRUE."
+      )
     }
-    message("Confirmed that '", domain, "' references one of the available IP addresses.")
+    message(
+      "Confirmed that '",
+      domain,
+      "' references one of the available IP addresses."
+    )
   }
 
-  if(missing(domain)){
-    stop("You must provide a valid domain name which points to this server in order to get an SSL certificate.")
-  }
-  if (missing(email)){
+  if (missing(domain)) {
     stop(
-      "You must provide an email to letsencrypt -- the provider of your SSL certificate -- for 'urgent renewal and security notices'.")
+      "You must provide a valid domain name which points to this server in order to get an SSL certificate."
+    )
   }
-  if (!termsOfService){
-    stop("You must agree to the letsencrypt terms of service before running this function")
+  if (missing(email)) {
+    stop(
+      "You must provide an email to letsencrypt -- the provider of your SSL certificate -- for 'urgent renewal and security notices'."
+    )
+  }
+  if (!terms_of_service) {
+    stop(
+      "You must agree to the letsencrypt terms of service before running this function"
+    )
   }
 
   # Trim off any protocol prefix if one exists
@@ -274,10 +322,14 @@ do_configure_https <- function(droplet, domain, email,
   domain <- sub("/$", "", domain)
 
   # Prepare the nginx conf file.
-  conf <- readLines(system.file("server", "nginx-ssl.conf", package="buoyant"))
+  conf <- readLines(system.file(
+    "server",
+    "nginx-ssl.conf",
+    package = "buoyant"
+  ))
   conf <- gsub("\\$DOMAIN\\$", domain, conf)
 
-  conffile <- tempfile()
+  conffile <- withr::local_tempfile()
   writeLines(conf, conffile)
 
   analogsea::droplet_ssh(droplet, "snap install core")
@@ -288,17 +340,24 @@ do_configure_https <- function(droplet, domain, email,
   analogsea::droplet_ssh(
     droplet,
     sprintf(
-      paste0("certbot certonly --webroot -w ",
-             "/var/certbot/ -n -d %s --email %s ",
-             "--agree-tos --renew-hook ",
-             "'/bin/systemctl reload nginx'"),
-      domain, email), ...
+      paste0(
+        "certbot certonly --webroot -w ",
+        "/var/certbot/ -n -d %s --email %s ",
+        "--agree-tos --renew-hook ",
+        "'/bin/systemctl reload nginx'"
+      ),
+      domain,
+      email
+    ),
+    ...
   )
-  analogsea::droplet_upload(droplet, conffile, "/etc/nginx/sites-available/server-apps-root", ...)
+  analogsea::droplet_upload(
+    droplet,
+    conffile,
+    "/etc/nginx/sites-available/server-apps-root",
+    ...
+  )
   analogsea::droplet_ssh(droplet, "systemctl reload nginx", ...)
-
-  # TODO: add this as a catch()
-  file.remove(conffile)
 
   invisible(droplet)
 }
@@ -312,11 +371,10 @@ do_configure_https <- function(droplet, domain, email,
 #'   was provisioned using [do_provision()].  See [analogsea::droplet()] to
 #'   obtain a reference to a running droplet.
 #' @param path The remote path/name of the application
-#' @param localPath The local path to the directory containing the `_server.yml`
-#'   file. The entire directory referenced will be deployed. The directory MUST
-#'   contain a `_server.yml` file.
+#' @param local_file The local file path to a file within a directory containing
+#'   the `_server.yml` file. The parent directory will be deployed.
 #' @param port The internal port on which this service should run. This will not
-#'   be user visible, but must be unique and point to a port that is available
+#'   be visible to visitors, but must be unique and point to a port that is available
 #'   on your server. If unsure, try a number around `8000`.
 #' @param forward If `TRUE`, will setup requests targeting the root URL on the
 #'   server to point to this application. See the [do_forward()] function for
@@ -329,82 +387,142 @@ do_configure_https <- function(droplet, domain, email,
 #'
 #' @return The DigitalOcean droplet
 #' @export
-do_deploy_server <- function(droplet, path, localPath, port, forward=FALSE,
-                             overwrite = FALSE, ...){
-
+do_deploy_server <- function(
+  droplet,
+  path,
+  local_file,
+  port,
+  forward = FALSE,
+  overwrite = FALSE,
+  ...,
+  keyfile = do_keyfile()
+) {
   # Trim off any leading slashes
   path <- sub("^/+", "", path)
   # Trim off any trailing slashes if any exist.
   path <- sub("/+$", "", path)
 
-  if (grepl("/", path)){
-    stop("Can't deploy to nested paths. '", path, "' should not have a / in it.")
+  if (grepl("/", path)) {
+    stop(
+      "Can't deploy to nested paths. '",
+      path,
+      "' should not have a / in it."
+    )
   }
-  if (grepl(" ", path)){
-    stop("Can't deploy to paths with whitespace. '", path, "' should not have a whitespace in it.")
+  if (grepl(" ", path)) {
+    stop(
+      "Can't deploy to paths with whitespace. '",
+      path,
+      "' should not have a whitespace in it."
+    )
   }
 
   # Validate the _server.yml file exists
-  serverYmlPath <- file.path(localPath, "_server.yml")
-  if (!file.exists(serverYmlPath)){
-    stop("Your application must contain a `_server.yml` file. ", serverYmlPath, " does not exist")
+  local_file_name <- basename(local_file)
+  local_path <- normalizePath(dirname(local_file))
+  server_yml_path <- file.path(local_path, "_server.yml")
+  if (!file.exists(server_yml_path)) {
+    stop(
+      "Your server directory must contain a `_server.yml` file. ",
+      server_yml_path,
+      " does not exist"
+    )
   }
 
   # Validate the _server.yml file locally
   message("Validating _server.yml file...")
-  validate_server_yml(localPath, check_engine = FALSE, verbose = FALSE)
-  config <- read_server_yml(localPath)
+  validate_server_yml(local_path, check_engine = FALSE, verbose = FALSE)
+  config <- read_server_yml(local_path)
   engine <- config$engine
 
   message("Deploying _server.yml application with engine: ", engine)
 
   ### UPLOAD the Application ###
-  remoteTmp <- paste0("/tmp/",
-                      paste0(sample(LETTERS, 10, replace=TRUE), collapse=""))
-  dirName <- gsub("^\\.?$", "*", basename(localPath))
-  dirName <- gsub(" ", "\\\\ ", dirName)
+  remote_tmp <- paste0(
+    "/tmp/",
+    paste0(sample(LETTERS, 10, replace = TRUE), collapse = "")
+  )
+  dir_name <- gsub("^\\.?$", "*", basename(local_path))
+  dir_name <- gsub(" ", "\\\\ ", dir_name)
 
   server_path = paste0("/var/server-apps/", path)
 
   # Check if path already exists
   if (overwrite) {
-    output = try({
-      do_remove_server(droplet, path = path, delete = TRUE, ...)
-    }, silent = TRUE)
+    output = try(
+      {
+        do_remove_server(
+          droplet,
+          path = path,
+          delete = TRUE,
+          ...,
+          keyfile = keyfile
+        )
+      },
+      silent = TRUE
+    )
     if (inherits(output, "try-error")) {
       msg = paste0("Tried to remove ", path, " application but had issues")
       warning(msg)
     }
   }
 
-  cmd = paste0("if [ -d ", server_path, " ]; then echo 'TRUE'; else echo 'FALSE'; fi")
-  check_path = droplet_capture(droplet, cmd, ...)
+  cmd = paste0(
+    "if [ -d ",
+    server_path,
+    " ]; then echo 'TRUE'; else echo 'FALSE'; fi"
+  )
+  check_path = droplet_capture(droplet, cmd, keyfile = keyfile)
   path_exists = grepl("TRUE", check_path, ignore.case = TRUE)
 
   if (path_exists) {
-    stop("An application already exists at path='", path, "'. ",
-         "Please remove it using do_remove_server() or use overwrite = TRUE")
+    stop(
+      "An application already exists at path='",
+      path,
+      "'. ",
+      "Please remove it using do_remove_server() or use overwrite = TRUE"
+    )
   }
 
-  analogsea::droplet_ssh(droplet, paste0("mkdir -p ", remoteTmp), ...)
-  analogsea::droplet_upload(droplet, local = localPath, remote = remoteTmp, ...)
-  analogsea::droplet_ssh(droplet, paste0("mv ", remoteTmp, "/", dirName, " ", server_path), ...)
-  analogsea::droplet_ssh(droplet, paste0("rm -rf ", remoteTmp), ...)
-
-  ### Install the engine if not present ###
-  message("Installing engine '", engine, "' if not present...")
   analogsea::droplet_ssh(
     droplet,
-    sprintf(
-      paste0(
-        "if ! Rscript -e \"requireNamespace('%s', quietly = TRUE)\" 2>&1 | grep -q 'TRUE'; then ",
-        "Rscript -e \"install.packages('%s', repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest')\"; ",
-        "fi"
-      ),
-      engine, engine
-    ),
-    ...
+    paste0("mkdir -p ", remote_tmp),
+    keyfile = keyfile
   )
+  analogsea::droplet_upload(
+    droplet,
+    local = local_path,
+    remote = remote_tmp,
+    keyfile = keyfile
+  )
+  analogsea::droplet_ssh(
+    droplet,
+    paste0("mv ", remote_tmp, "/", dir_name, " ", server_path),
+    keyfile = keyfile
+  )
+  analogsea::droplet_ssh(
+    droplet,
+    paste0("rm -rf ", remote_tmp),
+    keyfile = keyfile
+  )
+
+  ### Install the engine if not present ###
+  for (pkg in c("yaml", engine)) {
+    message("Installing '", pkg, "' if not present...")
+    analogsea::droplet_ssh(
+      droplet,
+      sprintf(
+        paste0(
+          "if ! Rscript -e \"requireNamespace('%s', quietly = TRUE)\" 2>&1 | grep -q 'TRUE'; then ",
+          "Rscript -e \"install.packages('%s', repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest')\"; ",
+          "fi"
+        ),
+        pkg,
+        pkg
+      ),
+      keyfile = keyfile
+    )
+  }
 
   ### Create systemd service ###
   message("Creating systemd service...")
@@ -418,26 +536,44 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=%s
-ExecStart=/usr/local/bin/Rscript -e \"engine <- yaml::read_yaml('_server.yml')$engine; launch_server <- get('launch_server', envir = asNamespace(engine), mode = 'function'); launch_server('_server.yml', host = '127.0.0.1', port = %d)\"
+ExecStart=/usr/local/bin/Rscript -e \"engine <- yaml::read_yaml('_server.yml')$engine; launch_server <- get('launch_server', envir = asNamespace(engine), mode = 'function'); launch_server('%s', host = '127.0.0.1', port = %d)\"
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 ",
-    path, server_path, port
+    path,
+    server_path,
+    local_file_name,
+    port
   )
 
   # Write service file to temp location
-  tmp_service <- tempfile()
+  tmp_service <- withr::local_tempfile()
   writeLines(service_file, tmp_service)
-  on.exit(unlink(tmp_service), add = TRUE)
 
-  analogsea::droplet_upload(droplet, local = tmp_service,
-                             remote = paste0("/etc/systemd/system/", service_name, ".service"), ...)
-  analogsea::droplet_ssh(droplet, "systemctl daemon-reload", ...)
-  analogsea::droplet_ssh(droplet, paste0("systemctl enable ", service_name), ...)
-  analogsea::droplet_ssh(droplet, paste0("systemctl start ", service_name), ...)
+  analogsea::droplet_upload(
+    droplet,
+    local = tmp_service,
+    remote = paste0("/etc/systemd/system/", service_name, ".service"),
+    keyfile = keyfile
+  )
+  analogsea::droplet_ssh(
+    droplet,
+    "systemctl daemon-reload",
+    keyfile = keyfile
+  )
+  analogsea::droplet_ssh(
+    droplet,
+    paste0("systemctl enable ", service_name),
+    keyfile = keyfile
+  )
+  analogsea::droplet_ssh(
+    droplet,
+    paste0("systemctl restart ", service_name),
+    keyfile = keyfile
+  )
 
   ### Create nginx configuration ###
   message("Configuring nginx...")
@@ -454,15 +590,19 @@ WantedBy=multi-user.target
     proxy_read_timeout 600s;
 }
 ",
-    path, port
+    path,
+    port
   )
 
-  tmp_nginx <- tempfile()
+  tmp_nginx <- withr::local_tempfile()
   writeLines(nginx_conf, tmp_nginx)
-  on.exit(unlink(tmp_nginx), add = TRUE)
 
-  analogsea::droplet_upload(droplet, local = tmp_nginx,
-                             remote = paste0("/etc/nginx/sites-available/server-apps/", path, ".conf"), ...)
+  analogsea::droplet_upload(
+    droplet,
+    local = tmp_nginx,
+    remote = paste0("/etc/nginx/sites-available/server-apps/", path, ".conf"),
+    keyfile = keyfile
+  )
 
   # Include all server-apps configs in main nginx config if not already included
   analogsea::droplet_ssh(
@@ -473,13 +613,13 @@ WantedBy=multi-user.target
       "sed -i '/server {/a \\    include /etc/nginx/sites-available/server-apps/*.conf;' ",
       "/etc/nginx/sites-available/server-apps-root"
     ),
-    ...
+    keyfile = keyfile
   )
 
-  analogsea::droplet_ssh(droplet, "systemctl reload nginx", ...)
+  analogsea::droplet_ssh(droplet, "systemctl reload nginx", keyfile = keyfile)
 
   if (forward) {
-    do_forward(droplet, path, ...)
+    do_forward(droplet, path, keyfile = keyfile)
   }
 
   message("Application deployed successfully!")
@@ -497,28 +637,36 @@ WantedBy=multi-user.target
 #' @param ... additional arguments to pass to [analogsea::droplet_ssh()].
 #'
 #' @export
-do_forward <- function(droplet, path, ...){
+do_forward <- function(droplet, path, ...) {
   path <- sub("^/+", "", path)
   path <- sub("/+$", "", path)
 
   nginx_conf <- sprintf(
-    "location / {
-    proxy_pass http://127.0.0.1:8000/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-"
+    "location = / {
+  return 307 /%s;
+}",
+    path
   )
 
-  # Note: This is a simplified implementation. In production, you'd want to:
-  # 1. Look up the actual port from the service configuration
-  # 2. Handle existing forwards properly
-  # For now, we'll just update the root location
+  forwardfile <- withr::local_tempfile()
+  writeLines(nginx_conf, forwardfile)
 
-  message("Note: Forward functionality needs the port from the application configuration.")
-  message("For now, manually configure nginx to forward / to your application.")
+  analogsea::droplet_upload(
+    droplet,
+    forwardfile,
+    "/etc/nginx/sites-available/server-apps/_forward.conf",
+    ...
+  )
+
+  # # Note: This is a simplified implementation. In production, you'd want to:
+  # # 1. Look up the actual port from the service configuration
+  # # 2. Handle existing forwards properly
+  # # For now, we'll just update the root location
+
+  # message(
+  #   "Note: Forward functionality needs the port from the application configuration."
+  # )
+  # message("For now, manually configure nginx to forward / to your application.")
 
   invisible(droplet)
 }
@@ -534,26 +682,57 @@ do_forward <- function(droplet, path, ...){
 #' @param ... additional arguments to pass to [analogsea::droplet_ssh()].
 #'
 #' @export
-do_remove_server <- function(droplet, path, delete=FALSE, ...){
+do_remove_server <- function(droplet, path, delete = FALSE, ...) {
   path <- sub("^/+", "", path)
   path <- sub("/+$", "", path)
 
+  if (grepl("/", path)) {
+    stop(
+      "Can't deploy to nested paths. '",
+      path,
+      "' should not have a / in it."
+    )
+  }
+
+  # Given that we're about to `rm -rf`, let's just be safe...
+  if (grepl("\\.\\.", path)) {
+    stop("Paths don't allow '..'s.")
+  }
+  if (nchar(path) == 0) {
+    stop("Path cannot be empty.")
+  }
+  try_ssh = function(...) {
+    try(analogsea::droplet_ssh(...), silent = TRUE)
+  }
+
   service_name <- paste0("server-", path)
 
-  message("Stopping service ", service_name, "...")
-  analogsea::droplet_ssh(droplet, paste0("systemctl stop ", service_name), ...)
-  analogsea::droplet_ssh(droplet, paste0("systemctl disable ", service_name), ...)
-  analogsea::droplet_ssh(droplet, paste0("rm /etc/systemd/system/", service_name, ".service"), ...)
-  analogsea::droplet_ssh(droplet, "systemctl daemon-reload", ...)
+  message("Stopping service '", service_name, "'...")
+  try_ssh(droplet, paste0("systemctl stop ", service_name), ...)
+  try_ssh(
+    droplet,
+    paste0("systemctl disable ", service_name),
+    ...
+  )
+  try_ssh(
+    droplet,
+    paste0("rm /etc/systemd/system/", service_name, ".service"),
+    ...
+  )
+  try_ssh(droplet, "systemctl daemon-reload", ...)
 
   message("Removing nginx configuration...")
-  analogsea::droplet_ssh(droplet, paste0("rm -f /etc/nginx/sites-available/server-apps/", path, ".conf"), ...)
-  analogsea::droplet_ssh(droplet, "systemctl reload nginx", ...)
+  try_ssh(
+    droplet,
+    paste0("rm -f /etc/nginx/sites-available/server-apps/", path, ".conf"),
+    ...
+  )
+  try_ssh(droplet, "systemctl reload nginx", ...)
 
   if (delete) {
     message("Deleting application files...")
     server_path <- paste0("/var/server-apps/", path)
-    analogsea::droplet_ssh(droplet, paste0("rm -rf ", server_path), ...)
+    try_ssh(droplet, paste0("rm -rf ", server_path), ...)
   }
 
   message("Application '", path, "' removed successfully!")
@@ -568,9 +747,11 @@ do_remove_server <- function(droplet, path, delete=FALSE, ...){
 #' @param ... additional arguments to pass to [analogsea::droplet_ssh()].
 #'
 #' @export
-do_remove_forward <- function(droplet, ...){
+do_remove_forward <- function(droplet, ...) {
   message("Note: Remove forward functionality needs to be implemented.")
-  message("For now, manually edit nginx configuration at /etc/nginx/sites-available/server-apps-root")
+  message(
+    "For now, manually edit nginx configuration at /etc/nginx/sites-available/server-apps-root"
+  )
 
   invisible(droplet)
 }
@@ -596,4 +777,20 @@ do_ip = function(droplet, path) {
   }
 }
 
-# nocov end
+#' Get the default DigitalOcean SSH keyfile path
+#'
+#' Returns the path to the SSH private key for "digitalocean.com" from
+#' [ssh::ssh_key_info()]. This is used as the default keyfile for all
+#' buoyant functions that interact with DigitalOcean droplets.
+#'
+#' @return A character string with the path to the SSH private key, or NULL
+#'   if no key is found.
+#' @export
+#' @examples
+#' \dontrun{
+#'   # Get the default keyfile path
+#'   do_keyfile()
+#' }
+do_keyfile <- function() {
+  ssh::ssh_key_info("digitalocean.com")$key
+}

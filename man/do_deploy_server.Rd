@@ -7,11 +7,12 @@
 do_deploy_server(
   droplet,
   path,
-  localPath,
+  local_path,
   port,
   forward = FALSE,
   overwrite = FALSE,
-  ...
+  ...,
+  keyfile = do_keyfile()
 )
 }
 \arguments{
@@ -21,7 +22,7 @@ obtain a reference to a running droplet.}
 
 \item{path}{The remote path/name of the application}
 
-\item{localPath}{The local path to the directory containing the \verb{_server.yml}
+\item{local_path}{The local path to the directory containing the \verb{_server.yml}
 file. The entire directory referenced will be deployed. The directory MUST
 contain a \verb{_server.yml} file.}
 

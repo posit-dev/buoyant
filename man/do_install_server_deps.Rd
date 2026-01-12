@@ -4,13 +4,14 @@
 \alias{do_install_server_deps}
 \title{Install server dependencies on a droplet}
 \usage{
-do_install_server_deps(droplet, ...)
+do_install_server_deps(droplet, keyfile = do_keyfile())
 }
 \arguments{
 \item{droplet}{The DigitalOcean droplet that you want to provision
 (see \code{\link[analogsea:droplet]{analogsea::droplet()}}). If empty, a new DigitalOcean server will be created.}
 
-\item{...}{Arguments passed into the \code{\link[analogsea:droplet_create]{analogsea::droplet_create()}} function.}
+\item{keyfile}{Path to private key for authentication. By default, uses the
+key for "digitalocean.com" from \code{\link[ssh:ssh_credentials]{ssh::ssh_key_info()}}.}
 }
 \description{
 Installs R and common dependencies needed for running _server.yml applications.

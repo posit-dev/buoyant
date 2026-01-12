@@ -8,7 +8,7 @@ do_configure_https(
   droplet,
   domain,
   email,
-  termsOfService = FALSE,
+  terms_of_service = FALSE,
   force = FALSE,
   ...
 )
@@ -24,7 +24,7 @@ TLS/SSL certificate.}
 \item{email}{Your email address; given to letsencrypt for "urgent renewal and
 security notices".}
 
-\item{termsOfService}{Set to \code{TRUE} to agree to the letsencrypt subscriber
+\item{terms_of_service}{Set to \code{TRUE} to agree to the letsencrypt subscriber
 agreement. At the time of writing, the current version is available
 \href{https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf}{here}.
 Must be set to true to obtain a certificate through letsencrypt.}

@@ -4,16 +4,16 @@
 \alias{do_provision}
 \title{Provision a DigitalOcean server for _server.yml applications}
 \usage{
-do_provision(droplet, example = FALSE, ...)
+do_provision(droplet, ..., keyfile = do_keyfile())
 }
 \arguments{
 \item{droplet}{The DigitalOcean droplet that you want to provision
 (see \code{\link[analogsea:droplet]{analogsea::droplet()}}). If empty, a new DigitalOcean server will be created.}
 
-\item{example}{If \code{TRUE}, will deploy an example _server.yml application
-to the server on port 8000 (if available in inst/examples).}
-
 \item{...}{Arguments passed into the \code{\link[analogsea:droplet_create]{analogsea::droplet_create()}} function.}
+
+\item{keyfile}{Path to private key for authentication. By default, uses the
+key for "digitalocean.com" from \code{\link[ssh:ssh_credentials]{ssh::ssh_key_info()}}.}
 }
 \value{
 The DigitalOcean droplet
@@ -22,7 +22,7 @@ The DigitalOcean droplet
 Create (if required), install the necessary prerequisites, and
 deploy a _server.yml-based R server application on a DigitalOcean virtual machine.
 You may sign up for a Digital Ocean account
-\href{https://www.digitalocean.com/?refcode=add0b50f54c4&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=CopyPaste}{here}.
+\href{https://m.do.co/c/6119f0430dad}{here}.
 You should configure an account ssh key with \code{\link[analogsea:key-crud]{analogsea::key_create()}} prior to using this method.
 This command is idempotent, so feel free to run it on a single server multiple times.
 }
@@ -46,20 +46,24 @@ of an error by default \code{do_provision} and an error of
 }
 \examples{
 \dontrun{
-  auth = try(analogsea::do_oauth())
-  if (!inherits(auth, "try-error") &&
-      inherits(auth, "request")) {
-    analogsea::droplets()
-    droplet = do_provision(region = "sfo3", example = FALSE)
-    analogsea::droplets()
-    # Deploy a _server.yml application
-    do_deploy_server(droplet, "myapp",
-                     "path/to/app/with/_server.yml",
-                     port=8000, forward=TRUE)
-    if (interactive()) {
-        utils::browseURL(do_ip(droplet, "/myapp"))
-    }
-    analogsea::droplet_delete(droplet)
+  auth <- analogsea::do_oauth()
+
+  analogsea::droplets()
+  droplet <- do_provision(region = "sfo3")
+  analogsea::droplets()
+
+  # Deploy a _server.yml application
+  do_deploy_server(
+    droplet,
+    "myapp",
+    "local/path/to/plumber.R",
+    port=8000,
+    forward=TRUE
+  )
+  if (interactive()) {
+      utils::browseURL(do_ip(droplet, "/myapp"))
   }
+
+  analogsea::droplet_delete(droplet)
 }
 }

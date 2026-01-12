@@ -6,9 +6,8 @@ test_that("validate_server_yml detects missing file", {
 })
 
 test_that("validate_server_yml detects missing engine field", {
-  tmp <- tempfile()
+  tmp <- withr::local_tempfile()
   dir.create(tmp)
-  on.exit(unlink(tmp, recursive = TRUE))
 
   # Create invalid _server.yml without engine
   writeLines("foo: bar", file.path(tmp, "_server.yml"))
@@ -20,9 +19,8 @@ test_that("validate_server_yml detects missing engine field", {
 })
 
 test_that("validate_server_yml accepts valid _server.yml", {
-  tmp <- tempfile()
+  tmp <- withr::local_tempfile()
   dir.create(tmp)
-  on.exit(unlink(tmp, recursive = TRUE))
 
   # Create valid _server.yml
   writeLines("engine: plumber2", file.path(tmp, "_server.yml"))
@@ -33,9 +31,8 @@ test_that("validate_server_yml accepts valid _server.yml", {
 })
 
 test_that("read_server_yml reads configuration", {
-  tmp <- tempfile()
+  tmp <- withr::local_tempfile()
   dir.create(tmp)
-  on.exit(unlink(tmp, recursive = TRUE))
 
   # Create _server.yml
   writeLines(c(
@@ -51,9 +48,8 @@ test_that("read_server_yml reads configuration", {
 })
 
 test_that("validate_server_yml handles direct file path", {
-  tmp <- tempfile()
+  tmp <- withr::local_tempfile()
   dir.create(tmp)
-  on.exit(unlink(tmp, recursive = TRUE))
 
   yml_file <- file.path(tmp, "_server.yml")
   writeLines("engine: plumber2", yml_file)
@@ -64,9 +60,8 @@ test_that("validate_server_yml handles direct file path", {
 })
 
 test_that("validate_server_yml detects invalid YAML", {
-  tmp <- tempfile()
+  tmp <- withr::local_tempfile()
   dir.create(tmp)
-  on.exit(unlink(tmp, recursive = TRUE))
 
   # Create invalid YAML
   writeLines("engine: [invalid yaml", file.path(tmp, "_server.yml"))

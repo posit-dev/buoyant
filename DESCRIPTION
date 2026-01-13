@@ -19,6 +19,7 @@ Depends:
 Imports:
     analogsea (>= 0.9.4),
     jsonlite,
+    renv,
     ssh,
     withr,
     yaml

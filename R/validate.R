@@ -38,7 +38,9 @@ validate_server_yml <- function(path, check_engine = FALSE, verbose = TRUE) {
   } else if (basename(path) == "_server.yml") {
     server_yml_path <- path
   } else {
-    stop("Path must be a directory containing _server.yml or the _server.yml file itself")
+    stop(
+      "Path must be a directory containing _server.yml or the _server.yml file itself"
+    )
   }
 
   # Check file exists
@@ -51,11 +53,14 @@ validate_server_yml <- function(path, check_engine = FALSE, verbose = TRUE) {
   }
 
   # Read and parse YAML
-  tryCatch({
-    config <- yaml::read_yaml(server_yml_path)
-  }, error = function(e) {
-    stop("Failed to parse _server.yml as valid YAML: ", e$message)
-  })
+  tryCatch(
+    {
+      config <- yaml::read_yaml(server_yml_path)
+    },
+    error = function(e) {
+      stop("Failed to parse _server.yml as valid YAML: ", e$message)
+    }
+  )
 
   # Check required 'engine' field
   if (is.null(config$engine)) {
@@ -74,32 +79,45 @@ validate_server_yml <- function(path, check_engine = FALSE, verbose = TRUE) {
   if (check_engine) {
     if (!requireNamespace(config$engine, quietly = TRUE)) {
       stop(
-        "Engine package '", config$engine, "' is not installed. ",
-        "Install it with: install.packages('", config$engine, "')"
+        "Engine package '",
+        config$engine,
+        "' is not installed. ",
+        "Install it with: install.packages('",
+        config$engine,
+        "')"
       )
     }
 
     # Check for launch_server function
-    has_launch_server <- tryCatch({
-      launch_fn <- get(
-        "launch_server",
-        envir = asNamespace(config$engine),
-        mode = "function"
-      )
-      is.function(launch_fn)
-    }, error = function(e) {
-      FALSE
-    })
+    has_launch_server <- tryCatch(
+      {
+        launch_fn <- get(
+          "launch_server",
+          envir = asNamespace(config$engine),
+          mode = "function"
+        )
+        is.function(launch_fn)
+      },
+      error = function(e) {
+        FALSE
+      }
+    )
 
     if (!has_launch_server) {
       stop(
-        "Engine package '", config$engine, "' does not have a launch_server() function. ",
+        "Engine package '",
+        config$engine,
+        "' does not have a launch_server() function. ",
         "It may not be a valid _server.yml engine."
       )
     }
 
     if (verbose) {
-      message("Engine '", config$engine, "' is installed and has launch_server()")
+      message(
+        "Engine '",
+        config$engine,
+        "' is installed and has launch_server()"
+      )
     }
   }
 
@@ -133,7 +151,9 @@ read_server_yml <- function(path) {
   } else if (basename(path) == "_server.yml") {
     server_yml_path <- path
   } else {
-    stop("Path must be a directory containing _server.yml or the _server.yml file itself")
+    stop(
+      "Path must be a directory containing _server.yml or the _server.yml file itself"
+    )
   }
 
   if (!file.exists(server_yml_path)) {

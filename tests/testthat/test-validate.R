@@ -35,11 +35,14 @@ test_that("read_server_yml reads configuration", {
   dir.create(tmp)
 
   # Create _server.yml
-  writeLines(c(
-    "engine: plumber2",
-    "options:",
-    "  port: 8000"
-  ), file.path(tmp, "_server.yml"))
+  writeLines(
+    c(
+      "engine: plumber2",
+      "options:",
+      "  port: 8000"
+    ),
+    file.path(tmp, "_server.yml")
+  )
 
   config <- read_server_yml(tmp)
 

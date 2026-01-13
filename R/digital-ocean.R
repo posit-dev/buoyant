@@ -447,11 +447,13 @@ server {
 #' @param forward If `TRUE`, will setup requests targeting the root URL on the
 #'   server to point to this application. See the [do_forward()] function for
 #'   more details.
-#' @param ... additional arguments to pass to [analogsea::droplet_ssh()] or
-#'   [analogsea::droplet_upload()], such as `keyfile`.
-#'   Cannot contain `remote`, `local` as named arguments.
 #' @param overwrite if an application is already running for this `path` name,
 #'   and `overwrite = TRUE`, then `do_remove_server` will be run.
+#' @param ... additional arguments to pass to [analogsea::droplet_ssh()] or
+#'   [analogsea::droplet_upload()].
+#'   Cannot contain `remote`, `local`, `keyfile` as named arguments.
+#' @param keyfile Path to private key for authentication. By default, uses the
+#'   key for "digitalocean.com" from [ssh::ssh_key_info()].
 #' @param r_packages A character vector of R packages to install via `{pak}` on the server. When `NULL` (default), all dependencies found via `{renv}` will be installed.
 #'
 #' @return The DigitalOcean droplet

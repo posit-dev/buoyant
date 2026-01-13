@@ -37,8 +37,11 @@ more details.}
 and \code{overwrite = TRUE}, then \code{do_remove_server} will be run.}
 
 \item{...}{additional arguments to pass to \code{\link[analogsea:droplet_ssh]{analogsea::droplet_ssh()}} or
-\code{\link[analogsea:droplet_ssh]{analogsea::droplet_upload()}}, such as \code{keyfile}.
-Cannot contain \code{remote}, \code{local} as named arguments.}
+\code{\link[analogsea:droplet_ssh]{analogsea::droplet_upload()}}.
+Cannot contain \code{remote}, \code{local}, \code{keyfile} as named arguments.}
+
+\item{keyfile}{Path to private key for authentication. By default, uses the
+key for "digitalocean.com" from \code{\link[ssh:ssh_credentials]{ssh::ssh_key_info()}}.}
 
 \item{r_packages}{A character vector of R packages to install via \code{{pak}} on the server. When \code{NULL} (default), all dependencies found via \code{{renv}} will be installed.}
 }

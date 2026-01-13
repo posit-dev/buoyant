@@ -18,12 +18,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: 
-
-Authors:
-\itemize{
-  \item Barret Schloerke \email{barret@posit.co} (\href{https://orcid.org/0000-0001-9986-114X}{ORCID})
-}
+\strong{Maintainer}: Barret Schloerke \email{barret@posit.co} (\href{https://orcid.org/0000-0001-9986-114X}{ORCID})
 
 Other contributors:
 \itemize{

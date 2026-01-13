@@ -27,14 +27,14 @@ This troubleshooting guide is organized by problem type. To find help:
 Before diving into specific problems:
 
 - **Check the logs first**: Most issues show up in the logs
-  ```{r}
-  droplet_ssh(droplet, "journalctl -u server-myapp -n 50")
-  ```
+```{r}
+analogsea::droplet_ssh(droplet, "journalctl -u server-myapp -n 50")
+```
 
 - **Verify the service is running**:
-  ```{r}
-  droplet_ssh(droplet, "systemctl status server-myapp")
-  ```
+```{r}
+analogsea::droplet_ssh(droplet, "systemctl status server-myapp")
+```
 
 - **Test locally before deploying**: Use `validate_server_yml()` to catch configuration errors early
 
@@ -56,10 +56,10 @@ If you can't connect to your droplet:
 
 ```{r}
 # Refresh droplet information
-droplet <- droplet(droplet$id)
+droplet <- analogsea::droplet(droplet$id)
 
 # Check IP is accessible
-ip <- do_ip(droplet)
+ip <- analogsea::droplet_ip(droplet)
 system(paste("ping -c 3", ip))
 ```
 
@@ -74,10 +74,10 @@ If your application URL isn't responding:
 
 ```{r}
 # Check if the service is running
-droplet_ssh(droplet, "systemctl status server-myapp")
+analogsea::droplet_ssh(droplet, "systemctl status server-myapp")
 
 # Check if nginx is running
-droplet_ssh(droplet, "systemctl status nginx")
+analogsea::droplet_ssh(droplet, "systemctl status nginx")
 ```
 
 ## Application Not Starting
@@ -88,25 +88,31 @@ The most useful troubleshooting tool is the service logs:
 
 ```{r}
 # View recent logs
-droplet_ssh(droplet, "journalctl -u server-myapp -n 50")
+analogsea::droplet_ssh(droplet, "journalctl -u server-myapp -n 50")
 
 # Follow logs in real-time
-droplet_ssh(droplet, "journalctl -u server-myapp -f")
+analogsea::droplet_ssh(droplet, "journalctl -u server-myapp -f")
 ```
 
 ### Common Issues
 
 **Missing Dependencies**
 
-If you see errors about missing packages:
+If you see errors about missing packages, add `if (FALSE) library(missingpkg)` lines to your app code or install them manually:
 
 ```{r}
-# Install R packages on the server
-do_install_server_deps(droplet, packages = c("dplyr", "ggplot2"))
+# Install missing packages via pak
+analogsea::droplet_ssh(
+  droplet,
+  "R -e 'pak::pkg_install(c(\"missingpkg1\", \"missingpkg2\"))'"
+)
 
-# Or install system libraries
-droplet_ssh(droplet, "sudo apt-get install -y libcurl4-openssl-dev")
+# Or install system dependencies directly if needed
+analogsea::ubuntu_apt_get_install(droplet, "libcurl4-openssl-dev")
+analogsea::ubuntu_apt_get_install(droplet, c("libxml2-dev", "libssl-dev"))
 ```
+
+`{pak}` installs packages AND their system dependencies automatically.
 
 **Port Conflicts**
 
@@ -114,7 +120,7 @@ If the port is already in use:
 
 ```{r}
 # Check what's using the port
-droplet_ssh(droplet, "netstat -tlnp | grep 8000")
+analogsea::droplet_ssh(droplet, "netstat -tlnp | grep 8000")
 
 # Use a different port for your application
 do_deploy_server(droplet, "myapp", "path/to/app", port = 8001)
@@ -139,10 +145,10 @@ Verify the systemd service was created:
 
 ```{r}
 # List all server services
-droplet_ssh(droplet, "systemctl list-units | grep server-")
+analogsea::droplet_ssh(droplet, "systemctl list-units | grep server-")
 
 # Check specific service status
-droplet_ssh(droplet, "systemctl status server-myapp")
+analogsea::droplet_ssh(droplet, "systemctl status server-myapp")
 ```
 
 ### Restart Service
@@ -151,10 +157,10 @@ Sometimes a restart helps:
 
 ```{r}
 # Restart the service
-droplet_ssh(droplet, "sudo systemctl restart server-myapp")
+analogsea::droplet_ssh(droplet, "sudo systemctl restart server-myapp")
 
 # Check status after restart
-droplet_ssh(droplet, "systemctl status server-myapp")
+analogsea::droplet_ssh(droplet, "systemctl status server-myapp")
 ```
 
 ## Nginx Issues
@@ -163,30 +169,30 @@ droplet_ssh(droplet, "systemctl status server-myapp")
 
 ```{r}
 # Test nginx configuration for syntax errors
-droplet_ssh(droplet, "nginx -t")
+analogsea::droplet_ssh(droplet, "nginx -t")
 
 # If errors, view the configuration
-droplet_ssh(droplet, "cat /etc/nginx/sites-available/server-myapp")
+analogsea::droplet_ssh(droplet, "cat /etc/nginx/sites-available/server-myapp")
 ```
 
 ### Check Nginx Logs
 
 ```{r}
 # Check nginx error log
-droplet_ssh(droplet, "tail -f /var/log/nginx/error.log")
+analogsea::droplet_ssh(droplet, "tail -f /var/log/nginx/error.log")
 
 # Check nginx access log
-droplet_ssh(droplet, "tail -f /var/log/nginx/access.log")
+analogsea::droplet_ssh(droplet, "tail -f /var/log/nginx/access.log")
 ```
 
 ### Restart Nginx
 
 ```{r}
 # Restart nginx
-droplet_ssh(droplet, "sudo systemctl restart nginx")
+analogsea::droplet_ssh(droplet, "sudo systemctl restart nginx")
 
 # Check status
-droplet_ssh(droplet, "systemctl status nginx")
+analogsea::droplet_ssh(droplet, "systemctl status nginx")
 ```
 
 ## Validation Errors
@@ -216,24 +222,6 @@ Your `_server.yml` must have an `engine` field:
 engine: plumber2
 ```
 
-**Invalid YAML Syntax**
-
-Check for proper indentation and formatting:
-
-```yaml
-# Correct
-engine: plumber2
-options:
-  host: 0.0.0.0
-  port: 8000
-
-# Incorrect (bad indentation)
-engine: plumber2
-options:
-host: 0.0.0.0
-port: 8000
-```
-
 ## Deployment Failures
 
 ### Upload Failures
@@ -242,14 +230,13 @@ If files fail to upload:
 
 ```{r}
 # Check SSH connection
-droplet_ssh(droplet, "echo 'Connection works'")
+analogsea::droplet_ssh(droplet, "echo 'Connection works'")
 
 # Check available disk space
-droplet_ssh(droplet, "df -h")
+analogsea::droplet_ssh(droplet, "df -h")
 
 # Try deploying again with overwrite
-do_deploy_server(droplet, "myapp", "path/to/app",
-                 port = 8000, overwrite = TRUE)
+do_deploy_server(droplet, "myapp", "path/to/app", port = 8000, overwrite = TRUE)
 ```
 
 ### Package Installation Failures
@@ -258,13 +245,10 @@ If the engine package fails to install:
 
 ```{r}
 # Check R is installed
-droplet_ssh(droplet, "R --version")
+analogsea::droplet_ssh(droplet, "R --version")
 
 # Try installing the package manually
-droplet_ssh(droplet, "sudo R -e \"install.packages('plumber2')\"")
-
-# Check for missing system dependencies
-droplet_ssh(droplet, "sudo apt-get update && sudo apt-get install -y r-base-dev")
+analogsea::install_r_package(droplet, "plumber2")
 ```
 
 ## HTTPS/SSL Issues
@@ -275,7 +259,7 @@ If Let's Encrypt certificate fails:
 
 ```{r}
 # Check certbot logs
-droplet_ssh(droplet, "cat /var/log/letsencrypt/letsencrypt.log")
+analogsea::droplet_ssh(droplet, "cat /var/log/letsencrypt/letsencrypt.log")
 
 # Verify DNS is configured correctly
 # (must wait for DNS propagation, usually 5-60 minutes)
@@ -291,10 +275,10 @@ system(paste("nslookup", "api.yourdomain.com"))
 
 ```{r}
 # Test certificate renewal
-droplet_ssh(droplet, "sudo certbot renew --dry-run")
+analogsea::droplet_ssh(droplet, "sudo certbot renew --dry-run")
 
 # Check renewal timer status
-droplet_ssh(droplet, "systemctl status certbot.timer")
+analogsea::droplet_ssh(droplet, "systemctl status certbot.timer")
 ```
 
 ## Performance Issues
@@ -303,10 +287,10 @@ droplet_ssh(droplet, "systemctl status certbot.timer")
 
 ```{r}
 # Check memory usage
-droplet_ssh(droplet, "free -h")
+analogsea::droplet_ssh(droplet, "free -h")
 
 # Check which processes are using memory
-droplet_ssh(droplet, "ps aux --sort=-%mem | head -n 10")
+analogsea::droplet_ssh(droplet, "ps aux --sort=-%mem | head -n 10")
 
 # Consider upgrading to a larger droplet
 droplet <- do_provision(size = "s-2vcpu-4gb")
@@ -316,10 +300,13 @@ droplet <- do_provision(size = "s-2vcpu-4gb")
 
 ```{r}
 # Check CPU usage
-droplet_ssh(droplet, "top -bn1 | head -20")
+analogsea::droplet_ssh(droplet, "top -bn1 | head -20")
 
 # Check if application is under heavy load
-droplet_ssh(droplet, "journalctl -u server-myapp -n 100 | grep -i error")
+analogsea::droplet_ssh(
+  droplet,
+  "journalctl -u server-myapp -n 100 | grep -i error"
+)
 ```
 
 ## Debugging Checklist
@@ -328,32 +315,32 @@ When something goes wrong, work through this checklist:
 
 1. **Can you connect to the droplet?**
    ```{r}
-   droplet_ssh(droplet, "echo 'Connected'")
+analogsea::droplet_ssh(droplet, "echo 'Connected'")
    ```
 
 2. **Is the service running?**
    ```{r}
-   droplet_ssh(droplet, "systemctl status server-myapp")
+analogsea::droplet_ssh(droplet, "systemctl status server-myapp")
    ```
 
 3. **What do the logs say?**
    ```{r}
-   droplet_ssh(droplet, "journalctl -u server-myapp -n 50")
+analogsea::droplet_ssh(droplet, "journalctl -u server-myapp -n 50")
    ```
 
 4. **Is the port listening?**
    ```{r}
-   droplet_ssh(droplet, "netstat -tlnp | grep 8000")
+analogsea::droplet_ssh(droplet, "netstat -tlnp | grep 8000")
    ```
 
 5. **Is nginx working?**
    ```{r}
-   droplet_ssh(droplet, "nginx -t && systemctl status nginx")
+analogsea::droplet_ssh(droplet, "nginx -t && systemctl status nginx")
    ```
 
 6. **Is the `_server.yml` valid?**
    ```{r}
-   validate_server_yml("my-app", check_engine = TRUE, verbose = TRUE)
+validate_server_yml("my-app", check_engine = TRUE, verbose = TRUE)
    ```
 
 ## Getting More Help

@@ -9,8 +9,14 @@ with_retries <- function(expr, max_attempts = 5, initial_wait = 1) {
       expr,
       error = function(e) {
         if (attempt < max_attempts) {
-          wait_time <- initial_wait * (2 ^ (attempt - 1))
-          message("Attempt ", attempt, " failed. Retrying in ", wait_time, " seconds...")
+          wait_time <- initial_wait * (2^(attempt - 1))
+          message(
+            "Attempt ",
+            attempt,
+            " failed. Retrying in ",
+            wait_time,
+            " seconds..."
+          )
           Sys.sleep(wait_time)
           NULL
         } else {
@@ -32,15 +38,16 @@ with_retries <- function(expr, max_attempts = 5, initial_wait = 1) {
 droplet_ip <- function(droplet) {
   v4 <- droplet$network$v4
   if (length(v4) == 0) {
-    stop("No network interface registered for this droplet\n  Try refreshing like: droplet(d$id)",
-         call. = FALSE)
+    stop(
+      "No network interface registered for this droplet\n  Try refreshing like: droplet(d$id)",
+      call. = FALSE
+    )
   }
   ips <- do.call("rbind", lapply(v4, as.data.frame))
   public_ip <- ips$type == "public"
   if (!any(public_ip)) {
     ip <- v4[[1]]$ip_address
-  }
-  else {
+  } else {
     ip <- ips$ip_address[public_ip][[1]]
   }
   ip
@@ -50,7 +57,26 @@ droplet_ip <- function(droplet) {
 #' @noRd
 droplet_ip_safe <- function(droplet) {
   res <- tryCatch(droplet_ip(droplet), error = function(e) e)
-  if (inherits(res, "simpleError"))
+  if (inherits(res, "simpleError")) {
     "droplet likely not up yet"
-  else res
+  } else {
+    res
+  }
+}
+
+
+install_r_pkg <- function(droplet, pkg, ...) {
+  install_r_pkgs(droplet, c(pkg), ...)
+}
+
+install_r_pkgs <- function(droplet, pkgs, ...) {
+  pkg_str <- paste0("c(", paste0("\"", pkgs, "\"", collapse = ", "), ")")
+  analogsea::droplet_ssh(
+    droplet,
+    sprintf(
+      "R --quiet -e 'pak::pkg_install(%s, ask = FALSE)'",
+      pkg_str
+    ),
+    ...
+  )
 }

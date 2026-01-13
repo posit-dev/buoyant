@@ -37,16 +37,12 @@ The `_server.yml` standard is a lightweight specification that allows different 
 engine: plumber2
 ```
 
-Each engine can define additional configuration fields. For example, a plumber2 application might have:
-
-```yaml
-engine: plumber2
-```
-
-The engine package must export a `launch_server(settings, host = NULL, port = NULL, ...)` function that:
-- Accepts the path to `_server.yml` as the first argument
+The *engine* R package must contain a `launch_server(settings, host = NULL, port = NULL, ...)` function that:
+- Accepts the path to the starting server file as the first argument. The starting server file must have a `_server.yml` in the same folder.
 - Can override host and port via parameters
 - Starts the web server
+
+There are no regulations on any other fields within `_server.yml`.
 
 ## Prerequisites
 
@@ -66,7 +62,7 @@ devtools::install_local("path/to/buoyant")
 
 ## Step 1: Create Your Application
 
-Create a `_server.yml` compliant application. For example, with plumber2:
+Create a `_server.yml` compliant application. For example, with `{plumber2}`:
 
 ```{yaml}
 #| file: _server.yml
@@ -81,17 +77,17 @@ function() {
 }
 
 #* @get /add
-#* @param a First number
-#* @param b Second number
-function(a, b) {
-  result <- as.numeric(a) + as.numeric(b)
+#* @query a First number
+#* @query b Second number
+function(query) {
+  result <- as.numeric(query$a) + as.numeric(query$b)
   list(result = result)
 }
 ```
 
 ## Step 2: Test Locally (Optional)
 
-If you have plumber2 installed:
+If you have `{plumber2}` installed:
 
 ```{r}
 library(plumber2)
@@ -103,21 +99,19 @@ Visit <http://127.0.0.1:8080/api-docs> to see your API documentation.
 ## Step 3: Set Up DigitalOcean
 
 ```{r}
-library(analogsea)
-
 # Authenticate with DigitalOcean
 # This will open a browser for authentication
-do_oauth()
+analogsea::do_oauth()
 
-# Check authentication
-droplets() # Should return a list (may be empty)
+# Check authentication and existing droplets
+analogsea::droplets() # Should return a list (may be empty)
 ```
 
 ### Configure SSH Keys
 
 Make sure you provide digitial ocean your public key at https://cloud.digitalocean.com/ssh_keys. Github has some good advice on creating a new public key if you don't already have one: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent.
 
-Be sure to store your `Host` to `digitalocean.com` and point to your private key that you created:
+Be sure to store your `Host` to `digitalocean.com` within your ssh config to point to your private key that you've created:
 
 ```
 Host github.com
@@ -127,7 +121,7 @@ Host github.com
 
 If you didn't use a password when creating your SSH key, you can skip the `UseKeychain` line.
 
-You can verify your DigitalOcean SSH key exists with the proper host with by calling `buoyant::do_keyfile()`.
+You can verify your DigitalOcean SSH key exists with the proper host with by calling `buoyant::do_keyfile()` and having it return the path to your private key.
 
 ## Step 4: Provision a Server
 
@@ -154,20 +148,20 @@ droplet <- do_provision(
 validate_server_yml("./")
 
 # Deploy!
-do_deploy_server(
-  overwrite = TRUE,
-  droplet = droplet,
-  path = "api", # URL sub-path: /api
-  local_path = "./_dev/barret", # Local directory
-  port = 8000, # Internal port
-  forward = TRUE # Make it accessible at root too
-)
+droplet |>
+  do_deploy_server(
+    path = "api", # URL sub-path: /api
+    local_path = "./_dev/barret", # Local directory
+    port = 8000, # Internal port
+    forward = TRUE, # Forwards `/` to `/api`
+    overwrite = TRUE
+  )
 ```
 
 The deployment process:
 
 1. Uploads your application files
-2. Installs the engine package (plumber2)
+2. Installs the engine package (e.g. `{plumber2}`)
 3. Creates a systemd service for auto-restart
 4. Configures nginx as a reverse proxy
 5. Starts your application
@@ -182,10 +176,18 @@ print(url) # e.g., "http://165.232.134.23/api"
 # Open in browser
 browseURL(paste0(url, "/hello"))
 
-# Or use httr to test
-library(httr)
-GET(paste0(url, "/hello"))
-GET(paste0(url, "/add?a=5&b=3"))
+# Or use httr2 to test
+httr2::request(paste0(url, "/hello")) |>
+  httr2::req_headers(Accept = "text/plain") |>
+  httr2::req_perform() |>
+  httr2::resp_body_string()
+#> [1] "Hello from buoyant!"
+
+httr2::request(paste0(url, "/add?a=5&b=3")) |>
+  httr2::req_headers(Accept = "text/plain") |>
+  httr2::req_perform() |>
+  httr2::resp_body_string()
+#> [1] "8"
 ```
 
 ## Step 7: Monitor Your Application
@@ -193,14 +195,13 @@ GET(paste0(url, "/add?a=5&b=3"))
 SSH into your droplet to check logs:
 
 ```{r}
-droplet_ssh(droplet, "journalctl -u server-api -f")
+analogsea::droplet_ssh(droplet, "journalctl -u server-api -f")
 ```
 
-Or use analogsea's convenience functions:
+Or to see if the service is running
 
 ```{r}
-# Check if service is running
-droplet_ssh(droplet, "systemctl status server-api")
+analogsea::droplet_ssh(droplet, "systemctl status server-api")
 ```
 
 ## Optional: Add HTTPS
@@ -242,6 +243,6 @@ For detailed information, see:
 
 - Package issues: <https://github.com/posit-dev/buoyant/issues>
 - DigitalOcean docs: <https://docs.digitalocean.com>
-- plumber2 docs: <https://plumber2.posit.co>
-- analogsea docs: <https://github.com/sckott/analogsea>
+- `{plumber2}` docs: <https://plumber2.posit.co>
+- `{analogsea}` docs: <https://github.com/sckott/analogsea>
 - `_server.yml` specification: <https://plumber2.posit.co/articles/server_yml.html>

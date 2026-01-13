@@ -12,7 +12,8 @@ do_deploy_server(
   forward = FALSE,
   overwrite = FALSE,
   ...,
-  keyfile = do_keyfile()
+  keyfile = do_keyfile(),
+  r_packages = NULL
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ and \code{overwrite = TRUE}, then \code{do_remove_server} will be run.}
 \item{...}{additional arguments to pass to \code{\link[analogsea:droplet_ssh]{analogsea::droplet_ssh()}} or
 \code{\link[analogsea:droplet_ssh]{analogsea::droplet_upload()}}, such as \code{keyfile}.
 Cannot contain \code{remote}, \code{local} as named arguments.}
+
+\item{r_packages}{A character vector of R packages to install via \code{{pak}} on the server. When \code{NULL} (default), all dependencies found via \code{{renv}} will be installed.}
 }
 \value{
 The DigitalOcean droplet

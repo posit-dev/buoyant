@@ -45,12 +45,16 @@
 #'     forward=TRUE
 #'   )
 #'   if (interactive()) {
-#'       utils::browseURL(do_ip(droplet, "/myapp"))
+#'     utils::browseURL(do_ip(droplet, "/myapp"))
 #'   }
 #'
 #'   analogsea::droplet_delete(droplet)
 #' }
-do_provision <- function(droplet, ..., keyfile = do_keyfile()) {
+do_provision <- function(
+  droplet,
+  ...,
+  keyfile = do_keyfile()
+) {
   if (missing(droplet) || is.null(droplet)) {
     # No droplet provided; create a new server
     message("THIS ACTION COSTS YOU MONEY!")
@@ -58,7 +62,7 @@ do_provision <- function(droplet, ..., keyfile = do_keyfile()) {
       "Provisioning a new server for which you will get a bill from DigitalOcean."
     )
 
-    create_args <- list(..., keyfile = keyfile)
+    create_args <- list(...)
     create_args$tags <- c(create_args$tags, "buoyant", "server-yml")
     create_args$image <- "ubuntu-24-04-x64"
 
@@ -110,6 +114,9 @@ do_install_server_deps = function(droplet, keyfile = do_keyfile()) {
   analogsea::droplet_ssh(
     droplet,
     "sudo echo 'DEBIAN_FRONTEND=noninteractive' >> /etc/environment",
+    paste(
+      "echo 'options(Ncpus=2, repos=c(\"CRAN\" = \"https://packagemanager.posit.co/cran/__linux__/noble/latest\"))' >> .Rprofile"
+    ),
     "curl -O https://cdn.rstudio.com/r/ubuntu-2404/pkgs/r-%s.%s_1_amd64.deb" |>
       sprintf(R.version[["major"]], R.version[["minor"]]),
     keyfile = keyfile
@@ -144,18 +151,16 @@ install_common_deps <- function(droplet, ...) {
       droplet,
       "libssl-dev",
       "make",
-      "libsodium-dev",
       "libcurl4-openssl-dev",
-      "libyaml-dev", # For yaml package
+      # All other system packages will be installed by `{pak}`
       ...
     )
   )
 
-  # Install yaml package (required by all _server.yml engines)
-  analogsea::install_r_package(
+  # Install pak binary
+  analogsea::droplet_ssh(
     droplet,
-    "yaml",
-    repo = "https://packagemanager.posit.co/cran/__linux__/noble/latest",
+    "R --quiet -e 'install.packages(\"pak\", repos = sprintf(\"https://r-lib.github.io/p/pak/stable/%s/%s/%s\", .Platform$pkgType, R.Version()$os, R.Version()$arch))'",
     ...
   )
 }
@@ -427,6 +432,7 @@ server {
 #'   Cannot contain `remote`, `local` as named arguments.
 #' @param overwrite if an application is already running for this `path` name,
 #'   and `overwrite = TRUE`, then `do_remove_server` will be run.
+#' @param r_packages A character vector of R packages to install via `{pak}` on the server. When `NULL` (default), all dependencies found via `{renv}` will be installed.
 #'
 #' @return The DigitalOcean droplet
 #' @export
@@ -438,7 +444,8 @@ do_deploy_server <- function(
   forward = FALSE,
   overwrite = FALSE,
   ...,
-  keyfile = do_keyfile()
+  keyfile = do_keyfile(),
+  r_packages = NULL
 ) {
   # Trim off any leading slashes
   path <- sub("^/+", "", path)
@@ -479,6 +486,18 @@ do_deploy_server <- function(
   engine <- config$engine
 
   message("Deploying _server.yml application with engine: ", engine)
+
+  # Find R dependencies
+  if (is.null(r_packages)) {
+    r_packages = unique(
+      renv::dependencies(dirname(local_file), quiet = TRUE)$Package
+    )
+  }
+  if (!is.character(r_packages)) {
+    stop(
+      "`r_packages=` must be a character vector of package names. `character(0)` is OK."
+    )
+  }
 
   ### UPLOAD the Application ###
   remote_tmp <- paste0(
@@ -550,26 +569,19 @@ do_deploy_server <- function(
   )
 
   ### Install the engine if not present ###
-  for (pkg in c("yaml", engine)) {
-    message("Installing '", pkg, "' if not present...")
-    analogsea::droplet_ssh(
-      droplet,
-      sprintf(
-        paste0(
-          "if ! Rscript -e \"requireNamespace('%s', quietly = TRUE)\" 2>&1 | grep -q 'TRUE'; then ",
-          "Rscript -e \"install.packages('%s', repos = 'https://packagemanager.posit.co/cran/__linux__/noble/latest')\"; ",
-          "fi"
-        ),
-        pkg,
-        pkg
-      ),
-      keyfile = keyfile
-    )
-  }
+  install_r_pkgs(droplet, c("any::yaml", engine, r_packages), keyfile = keyfile)
 
   ### Create systemd service ###
   message("Creating systemd service...")
   service_name <- paste0("server-", path)
+
+  # Create R script for the service to execute
+  r_script <- sprintf(
+    "engine <- yaml::read_yaml('_server.yml')$engine; launch_server <- get('launch_server', envir = asNamespace(engine), mode = 'function'); launch_server('%s', host = '127.0.0.1', port = %d)",
+    local_file_name,
+    port
+  )
+
   service_file <- sprintf(
     "[Unit]
 Description=Server application: %s
@@ -579,7 +591,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=%s
-ExecStart=/usr/local/bin/Rscript -e \"engine <- yaml::read_yaml('_server.yml')$engine; launch_server <- get('launch_server', envir = asNamespace(engine), mode = 'function'); launch_server('%s', host = '127.0.0.1', port = %d)\"
+ExecStart=/usr/local/bin/Rscript -e \"%s\"
 Restart=always
 RestartSec=10
 
@@ -588,8 +600,7 @@ WantedBy=multi-user.target
 ",
     path,
     server_path,
-    local_file_name,
-    port
+    r_script
   )
 
   # Write service file to temp location
@@ -783,12 +794,11 @@ do_remove_server <- function(droplet, path, delete = FALSE, ...) {
 #'
 #' @export
 do_remove_forward <- function(droplet, ...) {
-  message("Note: Remove forward functionality needs to be implemented.")
-  message(
-    "For now, manually edit nginx configuration at /etc/nginx/sites-available/server-apps-root"
+  stop(
+    "Remove forward functionality is not yet implemented.\n",
+    "Please manually edit nginx configuration at /etc/nginx/sites-available/server-apps-root",
+    call. = FALSE
   )
-
-  invisible(droplet)
 }
 
 #' Get the URL to a deployed application

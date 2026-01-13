@@ -61,7 +61,7 @@ of an error by default \code{do_provision} and an error of
     forward=TRUE
   )
   if (interactive()) {
-      utils::browseURL(do_ip(droplet, "/myapp"))
+    utils::browseURL(do_ip(droplet, "/myapp"))
   }
 
   analogsea::droplet_delete(droplet)

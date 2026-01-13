@@ -45,8 +45,9 @@ Adds TLS/SSL (HTTPS) to a droplet created using \code{\link[=do_provision]{do_pr
 \details{
 In order to get a TLS/SSL certificate, you need to point a domain name to the
 IP address associated with your droplet. If you don't already have a domain
-name, you can register one on \href{https://domains.google}{Google Domains},
-\href{https://www.namecheap.com}{Namecheap}, or \href{https://aws.amazon.com/route53/}{Amazon Route53}.
+name, you can register one on \href{https://domains.google}{Google Domains} or
+\href{https://aws.amazon.com/route53/}{Amazon Route53}.
+
 When sourcing a domain name, check if your registrar allows you to manage your own DNS
 records. If not, consider a service like \href{https://www.cloudflare.com}{CloudFlare} to manage
 your DNS. DigitalOcean also offers DNS management.

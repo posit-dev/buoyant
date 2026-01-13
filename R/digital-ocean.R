@@ -3,7 +3,7 @@
 #' Create (if required), install the necessary prerequisites, and
 #' deploy a _server.yml-based R server application on a DigitalOcean virtual machine.
 #' You may sign up for a Digital Ocean account
-#' [here](https://m.do.co/c/6119f0430dad).
+#' [here](https://www.digitalocean.com?refcode=6119f0430dad&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=CopyPaste).
 #' You should configure an account ssh key with [analogsea::key_create()] prior to using this method.
 #' This command is idempotent, so feel free to run it on a single server multiple times.
 #'
@@ -263,8 +263,9 @@ server {
 #'
 #' In order to get a TLS/SSL certificate, you need to point a domain name to the
 #' IP address associated with your droplet. If you don't already have a domain
-#' name, you can register one on [Google Domains](https://domains.google),
-#' [Namecheap](https://www.namecheap.com), or [Amazon Route53](https://aws.amazon.com/route53/).
+#' name, you can register one on [Google Domains](https://domains.google) or
+#' [Amazon Route53](https://aws.amazon.com/route53/).
+#'
 #' When sourcing a domain name, check if your registrar allows you to manage your own DNS
 #' records. If not, consider a service like [CloudFlare](https://www.cloudflare.com) to manage
 #' your DNS. DigitalOcean also offers DNS management.

@@ -103,7 +103,7 @@ list(result = result) }
     library(plumber2)
     api("_server.yml") |> api_run()
 
-Visit <http://127.0.0.1:8080/api-docs> to see your API documentation.
+Visit `http://127.0.0.1:8080/api-docs` to see your API documentation.
 
 ## Step 3: Set Up DigitalOcean
 

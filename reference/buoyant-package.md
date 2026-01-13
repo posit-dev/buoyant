@@ -11,7 +11,7 @@ formatted.
 
 Useful links:
 
-- <https://posit-dev.github.io/buoyant>
+- <https://posit-dev.github.io/buoyant/>
 
 - <https://github.com/posit-dev/buoyant>
 

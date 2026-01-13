@@ -2,8 +2,12 @@ Type: Package
 Package: buoyant
 Title: Deploy '_server.yml' Compliant Applications to DigitalOcean
 Version: 0.1.0
-Authors@R:
-    person("Barret", "Schloerke", , "barret@posit.co", role = c("cre", "aut"))
+Authors@R: c(
+    person("Barret", "Schloerke", , "barret@posit.co", role = "aut",
+           comment = c(ORCID = "0000-0001-9986-114X")),
+    person("Posit Software, PBC", role = c("cph", "fnd"),
+           comment = c(ROR = "03wc8by49"))
+  )
 Description: Provides tools to deploy R web server applications that
     follow the '_server.yml' standard. This standard allows different R
     server frameworks (plumber2, fiery, etc.) to be deployed using a

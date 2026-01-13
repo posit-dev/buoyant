@@ -66,12 +66,13 @@ The DigitalOcean droplet
 In order to get a TLS/SSL certificate, you need to point a domain name
 to the IP address associated with your droplet. If you don't already
 have a domain name, you can register one on [Google
-Domains](https://domains.google),
-[Namecheap](https://www.namecheap.com), or [Amazon
-Route53](https://aws.amazon.com/route53/). When sourcing a domain name,
-check if your registrar allows you to manage your own DNS records. If
-not, consider a service like [CloudFlare](https://www.cloudflare.com) to
-manage your DNS. DigitalOcean also offers DNS management.
+Domains](https://domains.google) or [Amazon
+Route53](https://aws.amazon.com/route53/).
+
+When sourcing a domain name, check if your registrar allows you to
+manage your own DNS records. If not, consider a service like
+[CloudFlare](https://www.cloudflare.com) to manage your DNS.
+DigitalOcean also offers DNS management.
 
 ## Examples
 

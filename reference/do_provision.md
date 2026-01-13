@@ -3,8 +3,8 @@
 Create (if required), install the necessary prerequisites, and deploy a
 \_server.yml-based R server application on a DigitalOcean virtual
 machine. You may sign up for a Digital Ocean account
-[here](https://m.do.co/c/6119f0430dad). You should configure an account
-ssh key with
+[here](https://www.digitalocean.com?refcode=6119f0430dad&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=CopyPaste).
+You should configure an account ssh key with
 [`analogsea::key_create()`](https://pacha.dev/analogsea/reference/key-crud.html)
 prior to using this method. This command is idempotent, so feel free to
 run it on a single server multiple times.

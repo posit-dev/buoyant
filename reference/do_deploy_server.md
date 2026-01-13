@@ -9,7 +9,7 @@ it available on the remote server.
 do_deploy_server(
   droplet,
   path,
-  local_file,
+  local_path,
   port,
   forward = FALSE,
   overwrite = FALSE,
@@ -34,10 +34,10 @@ do_deploy_server(
 
   The remote path/name of the application
 
-- local_file:
+- local_path:
 
-  The local file path to a file within a directory containing the
-  `_server.yml` file. The parent directory will be deployed.
+  The local directory path containing the `_server.yml` file. The entire
+  directory will be deployed.
 
 - port:
 
@@ -62,9 +62,14 @@ do_deploy_server(
   additional arguments to pass to
   [`analogsea::droplet_ssh()`](https://pacha.dev/analogsea/reference/droplet_ssh.html)
   or
-  [`analogsea::droplet_upload()`](https://pacha.dev/analogsea/reference/droplet_ssh.html),
-  such as `keyfile`. Cannot contain `remote`, `local` as named
-  arguments.
+  [`analogsea::droplet_upload()`](https://pacha.dev/analogsea/reference/droplet_ssh.html).
+  Cannot contain `remote`, `local`, `keyfile` as named arguments.
+
+- keyfile:
+
+  Path to private key for authentication. By default, uses the key for
+  "digitalocean.com" from
+  [`ssh::ssh_key_info()`](https://docs.ropensci.org/ssh/reference/ssh_credentials.html).
 
 - r_packages:
 

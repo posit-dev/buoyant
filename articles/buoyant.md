@@ -276,6 +276,6 @@ For detailed information, see:
 - [plumber2](https://plumber2.posit.co/) docs:
   <https://plumber2.posit.co>
 - [analogsea](https://github.com/pachadotdev/analogsea) docs:
-  <https://github.com/sckott/analogsea>
+  <https://github.com/pachadotdev/analogsea>
 - `_server.yml` specification:
   <https://plumber2.posit.co/articles/server_yml.html>

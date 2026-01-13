@@ -24,3 +24,17 @@ do_install_server_deps(droplet, keyfile = do_keyfile())
   Path to private key for authentication. By default, uses the key for
   "digitalocean.com" from
   [`ssh::ssh_key_info()`](https://docs.ropensci.org/ssh/reference/ssh_credentials.html).
+
+## Value
+
+Invisibly returns NULL. Called for side effects.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+  # Reinstall or update server dependencies on an existing droplet
+  droplet <- analogsea::droplet(123456)
+  do_install_server_deps(droplet)
+} # }
+```

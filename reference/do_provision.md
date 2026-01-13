@@ -62,8 +62,8 @@ Provisions a Ubuntu 24.04-x64 droplet with the following customizations:
 
 ## Note
 
-Please see <https://github.com/sckott/analogsea/issues/205> in case of
-an error by default `do_provision` and an error of
+Please see <https://github.com/pachadotdev/analogsea/issues/205> in case
+of an error by default `do_provision` and an error of
 `"Error: Size is not available in this region."`.
 
 ## Examples
@@ -80,7 +80,7 @@ if (FALSE) { # \dontrun{
   do_deploy_server(
     droplet,
     "myapp",
-    "local/path/to/plumber.R",
+    "local/path/to/app/",
     port=8000,
     forward=TRUE
   )

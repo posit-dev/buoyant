@@ -18,3 +18,18 @@ do_remove_forward(droplet, ...)
 
   additional arguments to pass to
   [`analogsea::droplet_ssh()`](https://pacha.dev/analogsea/reference/droplet_ssh.html).
+
+## Value
+
+This function currently stops with an error. Not yet implemented.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+  droplet <- analogsea::droplet(123456)
+
+  # This function is not yet implemented
+  do_remove_forward(droplet)
+} # }
+```

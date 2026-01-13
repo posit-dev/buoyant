@@ -397,8 +397,8 @@ If you’re still stuck:
 ## Related Resources
 
 - [DigitalOcean
-  troubleshooting](https://docs.digitalocean.com/products/droplets/troubleshooting/)
-- [analogsea documentation](https://github.com/sckott/analogsea)
+  troubleshooting](https://docs.digitalocean.com/products/droplets/)
+- [analogsea documentation](https://github.com/pachadotdev/analogsea)
 - [systemd
   documentation](https://www.freedesktop.org/software/systemd/man/)
 - [nginx documentation](https://nginx.org/en/docs/)

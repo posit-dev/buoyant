@@ -57,6 +57,10 @@ do_configure_https(
   [`analogsea::droplet_ssh()`](https://pacha.dev/analogsea/reference/droplet_ssh.html),
   such as `keyfile`.
 
+## Value
+
+The DigitalOcean droplet
+
 ## Details
 
 In order to get a TLS/SSL certificate, you need to point a domain name
@@ -68,3 +72,19 @@ Route53](https://aws.amazon.com/route53/). When sourcing a domain name,
 check if your registrar allows you to manage your own DNS records. If
 not, consider a service like [CloudFlare](https://www.cloudflare.com) to
 manage your DNS. DigitalOcean also offers DNS management.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+  droplet <- analogsea::droplet(123456)
+
+  # Add HTTPS support with Let's Encrypt
+  do_configure_https(
+    droplet,
+    domain = "myapp.example.com",
+    email = "admin@example.com",
+    terms_of_service = TRUE
+  )
+} # }
+```

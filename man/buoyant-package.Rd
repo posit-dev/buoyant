@@ -4,9 +4,9 @@
 \name{buoyant-package}
 \alias{buoyant}
 \alias{buoyant-package}
-\title{buoyant: Deploy '_server.yml' Compliant Applications to DigitalOcean}
+\title{buoyant: Deploy '_server.yml' Compliant Applications to 'DigitalOcean'}
 \description{
-Provides tools to deploy R web server applications that follow the '_server.yml' standard. This standard allows different R server frameworks (plumber2, fiery, etc.) to be deployed using a common interface. The package supports deployment to DigitalOcean and includes validation tools to ensure '_server.yml' files are correctly formatted.
+Provides tools to deploy R web server applications that follow the '_server.yml' standard. This standard allows different R server frameworks ('plumber2', 'fiery', etc.) to be deployed using a common interface. The package supports deployment to 'DigitalOcean' and includes validation tools to ensure '_server.yml' files are correctly formatted.
 }
 \seealso{
 Useful links:

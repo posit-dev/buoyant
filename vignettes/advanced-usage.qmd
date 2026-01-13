@@ -41,7 +41,7 @@ In this guide, you'll learn how to:
 
 Make changes locally, then redeploy:
 
-```{r}
+```{.r}
 do_deploy_server(
   droplet = droplet,
   path = "api",
@@ -53,7 +53,7 @@ do_deploy_server(
 
 ### Deploy Multiple Applications
 
-```{r}
+```{.r}
 # Deploy a second application on the same server
 do_deploy_server(
   droplet = droplet,
@@ -69,7 +69,7 @@ do_deploy_server(
 
 ### Remove an Application
 
-```{r}
+```{.r}
 # Stop and remove
 do_remove_server(droplet, path = "api", delete = TRUE)
 ```
@@ -78,7 +78,7 @@ do_remove_server(droplet, path = "api", delete = TRUE)
 
 When you're completely done:
 
-```{r}
+```{.r}
 library(analogsea)
 droplet_delete(droplet)
 ```
@@ -89,7 +89,7 @@ droplet_delete(droplet)
 
 You don't need to create a new droplet every time. You can reference existing droplets:
 
-```{r}
+```{.r}
 # Get a reference to an existing droplet by ID
 droplet <- droplet(id = 12345678)
 
@@ -107,7 +107,7 @@ do_deploy_server(droplet, "newapp", "path/to/app", port = 8002)
 
 You can customize the droplet specifications:
 
-```{r}
+```{.r}
 # Provision with specific size, region, and name
 droplet <- do_provision(
   size = "s-1vcpu-1gb", # 1 CPU, 1GB RAM
@@ -126,7 +126,7 @@ See [DigitalOcean pricing](https://www.digitalocean.com/pricing) for current rat
 
 By default, applications are accessible at `http://ip/path`. You can forward the root path to an application:
 
-```{r}
+```{.r}
 # Make an app accessible at the root
 do_forward(droplet, "myapp")
 
@@ -140,7 +140,7 @@ do_remove_forward(droplet)
 
 If your application needs system libraries or R packages:
 
-```{r}
+```{.r}
 # Install system packages
 droplet_ssh(droplet, "sudo apt-get install -y libgdal-dev")
 
@@ -154,20 +154,20 @@ do_install_server_deps(droplet, packages = c("sf", "terra"))
 
 SSH into your droplet to check logs:
 
-```{r}
+```{.r}
 droplet_ssh(droplet, "journalctl -u server-api -f")
 ```
 
 Or use analogsea's convenience functions:
 
-```{r}
+```{.r}
 # Check if service is running
 droplet_ssh(droplet, "systemctl status server-api")
 ```
 
 ### View Application Logs
 
-```{r}
+```{.r}
 # View recent logs
 droplet_ssh(droplet, "journalctl -u server-myapp -n 50")
 
@@ -177,7 +177,7 @@ droplet_ssh(droplet, "journalctl -u server-myapp -f")
 
 ### Check Resource Usage
 
-```{r}
+```{.r}
 # Check memory and CPU usage
 droplet_ssh(droplet, "htop")
 
@@ -189,7 +189,7 @@ droplet_ssh(droplet, "df -h")
 
 If you have a domain name:
 
-```{r}
+```{.r}
 # Point your domain to the droplet IP
 ip <- do_ip(droplet)
 print(ip)

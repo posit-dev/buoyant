@@ -40,7 +40,7 @@ able to get through the necessary R package compilations.
 }
 }
 \note{
-Please see \url{https://github.com/sckott/analogsea/issues/205} in case
+Please see \url{https://github.com/pachadotdev/analogsea/issues/205} in case
 of an error by default \code{do_provision} and an error of
 \code{"Error: Size is not available in this region."}.
 }

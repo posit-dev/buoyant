@@ -23,7 +23,7 @@
 #'  - A 4GB swap file is created to ensure that machines with little RAM (the default) are
 #'    able to get through the necessary R package compilations.
 #'
-#' @note Please see \url{https://github.com/sckott/analogsea/issues/205} in case
+#' @note Please see \url{https://github.com/pachadotdev/analogsea/issues/205} in case
 #'   of an error by default `do_provision` and an error of
 #'   `"Error: Size is not available in this region."`.
 #'
@@ -152,6 +152,8 @@ do_install_server_deps = function(droplet, keyfile = do_keyfile()) {
   install_firewall(droplet, keyfile = keyfile)
 }
 
+#' Install common dependencies
+#' @noRd
 install_common_deps <- function(droplet, ...) {
   # Install common system libraries needed by R packages
   with_retries(
@@ -194,17 +196,23 @@ droplet_capture <- function(droplet, command, ...) {
   lin
 }
 
+#' Install server structure
+#' @noRd
 install_server_structure <- function(droplet, ...) {
   # Create directory structure for server applications
   analogsea::droplet_ssh(droplet, "mkdir -p /var/server-apps", ...)
 }
 
+#' Install firewall
+#' @noRd
 install_firewall <- function(droplet, ...) {
   analogsea::droplet_ssh(droplet, "ufw allow http", ...)
   analogsea::droplet_ssh(droplet, "ufw allow ssh", ...)
   analogsea::droplet_ssh(droplet, "ufw -f enable", ...)
 }
 
+#' Install nginx
+#' @noRd
 install_nginx <- function(droplet, ...) {
   with_retries(analogsea::ubuntu_apt_get_install(droplet, "nginx", ...))
   analogsea::droplet_ssh(droplet, "rm -f /etc/nginx/sites-enabled/default", ...) # Disable the default site

@@ -270,5 +270,5 @@ For detailed information, see:
 - Package issues: <https://github.com/posit-dev/buoyant/issues>
 - DigitalOcean docs: <https://docs.digitalocean.com>
 - `{plumber2}` docs: <https://plumber2.posit.co>
-- `{analogsea}` docs: <https://github.com/sckott/analogsea>
+- `{analogsea}` docs: <https://github.com/pachadotdev/analogsea>
 - `_server.yml` specification: <https://plumber2.posit.co/articles/server_yml.html>

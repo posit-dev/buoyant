@@ -64,11 +64,14 @@ droplet_ip_safe <- function(droplet) {
   }
 }
 
-
+#' Install single R package
+#' @noRd
 install_r_pkg <- function(droplet, pkg, ...) {
   install_r_pkgs(droplet, c(pkg), ...)
 }
 
+#' Install R packages
+#' @noRd
 install_r_pkgs <- function(droplet, pkgs, ...) {
   pkg_str <- paste0("c(", paste0("\"", pkgs, "\"", collapse = ", "), ")")
   analogsea::droplet_ssh(

@@ -15,3 +15,4 @@
 ^pkgdown$
 ^\.httr-oauth$
 ^_dev$
+^cran-comments\.md$

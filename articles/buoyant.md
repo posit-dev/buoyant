@@ -1,0 +1,281 @@
+# Getting Started with buoyant
+
+This guide walks you through deploying your first `_server.yml`
+application using `buoyant`.
+
+## What is buoyant?
+
+`buoyant` is an R package for deploying web server applications to
+DigitalOcean. It works with any R web framework that implements the
+`_server.yml` standard, including:
+
+- [plumber2](https://plumber2.posit.co) - Modern R API framework
+- [fiery](https://fiery.data-imaginist.com) - Flexible web server
+  framework
+- Any custom package implementing the `_server.yml` standard
+
+When you deploy an application with `buoyant`:
+
+1.  Your application files are uploaded to the server
+2.  The engine package is installed if not present
+3.  A systemd service is created for automatic restarts
+4.  Nginx is configured as a reverse proxy
+5.  Your application is accessible via HTTP (or HTTPS with
+    [`do_configure_https()`](https://posit-dev.github.io/buoyant/reference/do_configure_https.md))
+
+## The `_server.yml` Standard
+
+The `_server.yml` standard is a lightweight specification that allows
+different R web frameworks to be deployed consistently. At minimum, your
+application needs a `_server.yml` file with an `engine` field:
+
+``` yaml
+engine: plumber2
+```
+
+The *engine* R package must contain a
+`launch_server(settings, host = NULL, port = NULL, ...)` function
+that: - Accepts the path to the starting server file as the first
+argument. The starting server file must have a `_server.yml` in the same
+folder. - Can override host and port via parameters - Starts the web
+server
+
+There are no regulations on any other fields within `_server.yml`.
+
+## Case study: plumber2
+
+[plumber2](https://plumber2.posit.co/) adheres to the `_server.yml`
+standard and in the following we will go through how it does so as an
+example for other engine developers who wish to support it.
+
+### YAML content
+
+[plumber2](https://plumber2.posit.co/) currently defines 3 fields in
+addition to the `engine` field:
+
+- `routes`: An array of R files or folders that contain the server logic
+  as annotated functions and objects.
+- `constructor`: A path to a single R file that constructs the
+  `Plumber2` object.
+- `options`: A list of options to use for the server. These all
+  corresponds to options that can be seen in `?plumber2::all_opts()`.
+
+[plumber2](https://plumber2.posit.co/) provide a function
+(`create_server_yml()`) that creates this file for you so that the user
+can be confident that it is formatted correctly. This is generally a
+good idea and also provides a place to document the content of the file.
+
+### `launch_server()`
+
+The `launch_server()` function is quite simple for
+[plumber2](https://plumber2.posit.co/) since the `api()` constructor
+itself understands `_server.yml` files as input. Because of this the
+function looks like this:
+
+`{.r launch_server} function(settings, host = NULL, port = NULL, ...) { pa <- api(settings) if (!is.null(host)) { pa$host <- host } if (!is.null(port)) { pa$port <- port } api_run(pa) } <environment: namespace:plumber2>`
+
+## Prerequisites
+
+1.  **R** (\>= 3.0.0)
+2.  **DigitalOcean Account** - Sign up at <https://www.digitalocean.com>
+3.  **SSH Keys** - Configure SSH keys for your system
+
+## Step 1: Create Your Application
+
+Create a `_server.yml` compliant application. For example, with
+[plumber2](https://plumber2.posit.co/):
+
+`{.yaml server_yaml} #| file: _server.yml engine: plumber2 routes: app.R constructor: ~ options: {}`
+
+\`\`\`{.r app} \#\| file: app.R \#\* @get /hello function() {
+list(message = “Hello from buoyant!”) }
+
+\#\* @get /add \#\* @query a First number \#\* @query b Second number
+function(query) { result \<- as.numeric(query$`a) + as.numeric(query`$b)
+list(result = result) }
+
+
+    ## Step 2: Test Locally (Optional)
+
+    If you have `{plumber2}` installed:
+
+    ```{.r}
+    library(plumber2)
+    api("_server.yml") |> api_run()
+
+Visit <http://127.0.0.1:8080/api-docs> to see your API documentation.
+
+## Step 3: Set Up DigitalOcean
+
+``` r
+
+# Authenticate with DigitalOcean
+# This will open a browser for authentication
+analogsea::do_oauth()
+
+# Check authentication and existing droplets
+analogsea::droplets() # Should return a list (may be empty)
+```
+
+### Configure SSH Keys
+
+Make sure you provide digitial ocean your public key at
+https://cloud.digitalocean.com/ssh_keys. Github has some good advice on
+creating a new public key if you don’t already have one:
+https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent.
+
+Be sure to store your `Host` to `digitalocean.com` within your ssh
+config to point to your private key that you’ve created:
+
+    Host github.com
+      UseKeychain yes
+      IdentityFile ~/.ssh/newly_created_key_file
+
+If you didn’t use a password when creating your SSH key, you can skip
+the `UseKeychain` line.
+
+You can verify your DigitalOcean SSH key exists with the proper host
+with by calling
+[`buoyant::do_keyfile()`](https://posit-dev.github.io/buoyant/reference/do_keyfile.md)
+and having it return the path to your private key.
+
+## Step 4: Provision a Server
+
+``` r
+
+library(buoyant)
+
+# This will cost money! Check DigitalOcean pricing first.
+# A basic droplet costs around $6/month (as of 2025)
+
+droplet <- do_provision(
+  name = "my-api-server",
+  region = "sfo3", # San Francisco
+  size = "s-1vcpu-1gb" # Basic tier
+)
+
+# This will take a few minutes...
+# It installs R, nginx, firewall, and sets up the server structure
+```
+
+## Step 5: Deploy Your Application
+
+``` r
+
+# Validate your _server.yml file first
+validate_server_yml("./")
+
+# Deploy!
+droplet |>
+  do_deploy_server(
+    path = "api", # URL sub-path: /api
+    local_path = "./_dev/barret", # Local directory
+    port = 8000, # Internal port
+    forward = TRUE, # Forwards `/` to `/api`
+    overwrite = TRUE
+  )
+```
+
+The deployment process:
+
+1.  Uploads your application files
+2.  Installs the engine package
+    (e.g. [plumber2](https://plumber2.posit.co/))
+3.  Creates a systemd service for auto-restart
+4.  Configures nginx as a reverse proxy
+5.  Starts your application
+
+## Step 6: Access Your API
+
+``` r
+
+# Get the URL
+url <- do_ip(droplet, "/api")
+print(url) # e.g., "http://165.232.134.23/api"
+
+# Open in browser
+browseURL(paste0(url, "/hello"))
+
+# Or use httr2 to test
+httr2::request(paste0(url, "/hello")) |>
+  httr2::req_headers(Accept = "text/plain") |>
+  httr2::req_perform() |>
+  httr2::resp_body_string()
+#> [1] "Hello from buoyant!"
+
+httr2::request(paste0(url, "/add?a=5&b=3")) |>
+  httr2::req_headers(Accept = "text/plain") |>
+  httr2::req_perform() |>
+  httr2::resp_body_string()
+#> [1] "8"
+```
+
+## Step 7: Monitor Your Application
+
+SSH into your droplet to check logs:
+
+``` r
+
+analogsea::droplet_ssh(droplet, "journalctl -u server-api -f")
+```
+
+Or to see if the service is running
+
+``` r
+
+analogsea::droplet_ssh(droplet, "systemctl status server-api")
+```
+
+## Optional: Add HTTPS
+
+If you have a domain name:
+
+``` r
+
+# Point your domain to the droplet IP
+ip <- do_ip(droplet)
+print(ip)
+
+# After DNS is configured (wait for propagation):
+do_configure_https(
+  droplet = droplet,
+  domain = "api.yourdomain.com",
+  email = "you@example.com",
+  terms_of_service = TRUE # Agree to Let's Encrypt TOS
+)
+```
+
+Now your API is available at `https://api.yourdomain.com/api`
+
+## What’s Next?
+
+You’ve successfully deployed your first application! Here are some next
+steps:
+
+- **Update your application**: Redeploy with `overwrite = TRUE` when you
+  make changes
+- **Deploy multiple apps**: Use different ports and paths on the same
+  droplet
+- **Add HTTPS**: Use
+  [`do_configure_https()`](https://posit-dev.github.io/buoyant/reference/do_configure_https.md)
+  with your domain name
+- **Monitor your app**: Check logs with `journalctl -u server-myapp`
+
+For detailed information, see:
+
+- **[Advanced
+  Usage](https://posit-dev.github.io/buoyant/articles/advanced-usage.md)** -
+  Managing deployments, multiple apps, HTTPS, and more
+- **[Troubleshooting](https://posit-dev.github.io/buoyant/articles/troubleshooting.md)** -
+  Common issues and solutions
+
+## Getting Help
+
+- Package issues: <https://github.com/posit-dev/buoyant/issues>
+- DigitalOcean docs: <https://docs.digitalocean.com>
+- [plumber2](https://plumber2.posit.co/) docs:
+  <https://plumber2.posit.co>
+- [analogsea](https://github.com/pachadotdev/analogsea) docs:
+  <https://github.com/sckott/analogsea>
+- `_server.yml` specification:
+  <https://plumber2.posit.co/articles/server_yml.html>

@@ -16,6 +16,20 @@ just stops and disables the service.}
 
 \item{...}{additional arguments to pass to \code{\link[analogsea:droplet_ssh]{analogsea::droplet_ssh()}}.}
 }
+\value{
+The DigitalOcean droplet
+}
 \description{
 Removes a deployed _server.yml application from the server.
+}
+\examples{
+\dontrun{
+  droplet <- analogsea::droplet(123456)
+
+  # Stop the service but keep files
+  do_remove_server(droplet, "myapp", delete = FALSE)
+
+  # Remove the service and delete all files
+  do_remove_server(droplet, "myapp", delete = TRUE)
+}
 }

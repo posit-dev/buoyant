@@ -13,6 +13,19 @@ do_forward(droplet, path, ...)
 
 \item{...}{additional arguments to pass to \code{\link[analogsea:droplet_ssh]{analogsea::droplet_ssh()}}.}
 }
+\value{
+The DigitalOcean droplet
+}
 \description{
 Configures nginx to forward requests from the root path (/) to a specific application.
+}
+\examples{
+\dontrun{
+  droplet <- analogsea::droplet(123456)
+
+  # Forward root URL to an application
+  do_forward(droplet, "myapp")
+
+  # Now visiting http://your-ip/ will redirect to http://your-ip/myapp
+}
 }

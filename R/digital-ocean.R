@@ -109,7 +109,15 @@ do_provision <- function(
 #' if needed.
 #'
 #' @inheritParams do_provision
+#'
+#' @return Invisibly returns NULL. Called for side effects.
 #' @export
+#' @examples
+#' \dontrun{
+#'   # Reinstall or update server dependencies on an existing droplet
+#'   droplet <- analogsea::droplet(123456)
+#'   do_install_server_deps(droplet)
+#' }
 do_install_server_deps = function(droplet, keyfile = do_keyfile()) {
   analogsea::droplet_ssh(
     droplet,
@@ -270,7 +278,20 @@ server {
 #' @param ... additional arguments to pass to [analogsea::droplet_ssh()], such as
 #'   `keyfile`.
 #'
+#' @return The DigitalOcean droplet
 #' @export
+#' @examples
+#' \dontrun{
+#'   droplet <- analogsea::droplet(123456)
+#'
+#'   # Add HTTPS support with Let's Encrypt
+#'   do_configure_https(
+#'     droplet,
+#'     domain = "myapp.example.com",
+#'     email = "admin@example.com",
+#'     terms_of_service = TRUE
+#'   )
+#' }
 do_configure_https <- function(
   droplet,
   domain,
@@ -687,7 +708,17 @@ WantedBy=multi-user.target
 #' @param path The application path to forward root requests to.
 #' @param ... additional arguments to pass to [analogsea::droplet_ssh()].
 #'
+#' @return The DigitalOcean droplet
 #' @export
+#' @examples
+#' \dontrun{
+#'   droplet <- analogsea::droplet(123456)
+#'
+#'   # Forward root URL to an application
+#'   do_forward(droplet, "myapp")
+#'
+#'   # Now visiting http://your-ip/ will redirect to http://your-ip/myapp
+#' }
 do_forward <- function(droplet, path, ...) {
   path <- sub("^/+", "", path)
   path <- sub("/+$", "", path)
@@ -724,7 +755,18 @@ do_forward <- function(droplet, path, ...) {
 #'   just stops and disables the service.
 #' @param ... additional arguments to pass to [analogsea::droplet_ssh()].
 #'
+#' @return The DigitalOcean droplet
 #' @export
+#' @examples
+#' \dontrun{
+#'   droplet <- analogsea::droplet(123456)
+#'
+#'   # Stop the service but keep files
+#'   do_remove_server(droplet, "myapp", delete = FALSE)
+#'
+#'   # Remove the service and delete all files
+#'   do_remove_server(droplet, "myapp", delete = TRUE)
+#' }
 do_remove_server <- function(droplet, path, delete = FALSE, ...) {
   path <- sub("^/+", "", path)
   path <- sub("/+$", "", path)
@@ -789,7 +831,15 @@ do_remove_server <- function(droplet, path, delete = FALSE, ...) {
 #' @param droplet The droplet on which to act.
 #' @param ... additional arguments to pass to [analogsea::droplet_ssh()].
 #'
+#' @return This function currently stops with an error. Not yet implemented.
 #' @export
+#' @examples
+#' \dontrun{
+#'   droplet <- analogsea::droplet(123456)
+#'
+#'   # This function is not yet implemented
+#'   do_remove_forward(droplet)
+#' }
 do_remove_forward <- function(droplet, ...) {
   stop(
     "Remove forward functionality is not yet implemented.\n",

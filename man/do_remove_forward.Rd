@@ -11,6 +11,17 @@ do_remove_forward(droplet, ...)
 
 \item{...}{additional arguments to pass to \code{\link[analogsea:droplet_ssh]{analogsea::droplet_ssh()}}.}
 }
+\value{
+This function currently stops with an error. Not yet implemented.
+}
 \description{
 Removes any root path forwarding configuration.
+}
+\examples{
+\dontrun{
+  droplet <- analogsea::droplet(123456)
+
+  # This function is not yet implemented
+  do_remove_forward(droplet)
+}
 }

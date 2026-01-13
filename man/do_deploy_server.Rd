@@ -7,7 +7,7 @@
 do_deploy_server(
   droplet,
   path,
-  local_file,
+  local_path,
   port,
   forward = FALSE,
   overwrite = FALSE,
@@ -23,8 +23,7 @@ obtain a reference to a running droplet.}
 
 \item{path}{The remote path/name of the application}
 
-\item{local_file}{The local file path to a file within a directory containing
-the \verb{_server.yml} file. The parent directory will be deployed.}
+\item{local_path}{The local directory path containing the \verb{_server.yml} file. The entire directory will be deployed.}
 
 \item{port}{The internal port on which this service should run. This will not
 be visible to visitors, but must be unique and point to a port that is available

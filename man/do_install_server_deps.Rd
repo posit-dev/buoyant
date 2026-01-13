@@ -13,8 +13,18 @@ do_install_server_deps(droplet, keyfile = do_keyfile())
 \item{keyfile}{Path to private key for authentication. By default, uses the
 key for "digitalocean.com" from \code{\link[ssh:ssh_credentials]{ssh::ssh_key_info()}}.}
 }
+\value{
+Invisibly returns NULL. Called for side effects.
+}
 \description{
 Installs R and common dependencies needed for running _server.yml applications.
 This is called automatically by \code{\link[=do_provision]{do_provision()}} but can be called separately
 if needed.
+}
+\examples{
+\dontrun{
+  # Reinstall or update server dependencies on an existing droplet
+  droplet <- analogsea::droplet(123456)
+  do_install_server_deps(droplet)
+}
 }

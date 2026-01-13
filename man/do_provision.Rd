@@ -56,7 +56,7 @@ of an error by default \code{do_provision} and an error of
   do_deploy_server(
     droplet,
     "myapp",
-    "local/path/to/plumber.R",
+    "local/path/to/app/",
     port=8000,
     forward=TRUE
   )

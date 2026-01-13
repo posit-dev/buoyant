@@ -36,6 +36,9 @@ If \code{TRUE}, will ignore any discrepancy and attempt to register anyway.}
 \item{...}{additional arguments to pass to \code{\link[analogsea:droplet_ssh]{analogsea::droplet_ssh()}}, such as
 \code{keyfile}.}
 }
+\value{
+The DigitalOcean droplet
+}
 \description{
 Adds TLS/SSL (HTTPS) to a droplet created using \code{\link[=do_provision]{do_provision()}}.
 }
@@ -47,4 +50,17 @@ name, you can register one on \href{https://domains.google}{Google Domains},
 When sourcing a domain name, check if your registrar allows you to manage your own DNS
 records. If not, consider a service like \href{https://www.cloudflare.com}{CloudFlare} to manage
 your DNS. DigitalOcean also offers DNS management.
+}
+\examples{
+\dontrun{
+  droplet <- analogsea::droplet(123456)
+
+  # Add HTTPS support with Let's Encrypt
+  do_configure_https(
+    droplet,
+    domain = "myapp.example.com",
+    email = "admin@example.com",
+    terms_of_service = TRUE
+  )
+}
 }

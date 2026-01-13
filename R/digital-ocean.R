@@ -40,7 +40,7 @@
 #'   do_deploy_server(
 #'     droplet,
 #'     "myapp",
-#'     "local/path/to/plumber.R",
+#'     "local/path/to/app/",
 #'     port=8000,
 #'     forward=TRUE
 #'   )
@@ -419,8 +419,7 @@ server {
 #'   was provisioned using [do_provision()].  See [analogsea::droplet()] to
 #'   obtain a reference to a running droplet.
 #' @param path The remote path/name of the application
-#' @param local_file The local file path to a file within a directory containing
-#'   the `_server.yml` file. The parent directory will be deployed.
+#' @param local_path The local directory path containing the `_server.yml` file. The entire directory will be deployed.
 #' @param port The internal port on which this service should run. This will not
 #'   be visible to visitors, but must be unique and point to a port that is available
 #'   on your server. If unsure, try a number around `8000`.
@@ -439,7 +438,7 @@ server {
 do_deploy_server <- function(
   droplet,
   path,
-  local_file,
+  local_path,
   port,
   forward = FALSE,
   overwrite = FALSE,
@@ -468,8 +467,7 @@ do_deploy_server <- function(
   }
 
   # Validate the _server.yml file exists
-  local_file_name <- basename(local_file)
-  local_path <- normalizePath(dirname(local_file))
+  local_path <- normalizePath(local_path)
   server_yml_path <- file.path(local_path, "_server.yml")
   if (!file.exists(server_yml_path)) {
     stop(
@@ -490,7 +488,7 @@ do_deploy_server <- function(
   # Find R dependencies
   if (is.null(r_packages)) {
     r_packages = unique(
-      renv::dependencies(dirname(local_file), quiet = TRUE)$Package
+      renv::dependencies(local_path, quiet = TRUE)$Package
     )
   }
   if (!is.character(r_packages)) {
@@ -577,8 +575,7 @@ do_deploy_server <- function(
 
   # Create R script for the service to execute
   r_script <- sprintf(
-    "engine <- yaml::read_yaml('_server.yml')$engine; launch_server <- get('launch_server', envir = asNamespace(engine), mode = 'function'); launch_server('%s', host = '127.0.0.1', port = %d)",
-    local_file_name,
+    "engine <- yaml::read_yaml('_server.yml')$engine; launch_server <- get('launch_server', envir = asNamespace(engine), mode = 'function'); launch_server('_server.yml', host = '127.0.0.1', port = %d)",
     port
   )
 

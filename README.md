@@ -49,7 +49,7 @@ The `_server.yml` standard is a lightweight specification for R web servers. At 
 engine: plumber2
 ```
 
-Each engine package (like `plumber2` or `fiery`) can define additional fields. The engine must provide a `launch_server(settings, host = NULL, port = NULL, ...)` function.
+Each engine package (like `plumber2` or `fiery`) can define additional fields. The engine R package must provide a `launch_server(settings, host = NULL, port = NULL, ...)` function.
 
 ## Features
 

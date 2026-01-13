@@ -44,33 +44,59 @@ The *engine* R package must contain a `launch_server(settings, host = NULL, port
 
 There are no regulations on any other fields within `_server.yml`.
 
+## Case study: plumber2
+
+`{plumber2}` adheres to the `_server.yml` standard and in the following we will go through how it does so as an example for other engine developers who wish to support it.
+
+### YAML content
+`{plumber2}` currently defines 3 fields in addition to the `engine` field:
+
+* `routes`: An array of R files or folders that contain the server logic as annotated functions and objects.
+* `constructor`: A path to a single R file that constructs the `Plumber2` object.
+* `options`: A list of options to use for the server. These all corresponds to options that can be seen in `?plumber2::all_opts()`.
+
+`{plumber2}` provide a function (`create_server_yml()`) that creates this file for you so that the user can be confident that it is formatted correctly. This is generally a good idea and also provides a place to document the content of the file.
+
+### `launch_server()`
+The `launch_server()` function is quite simple for `{plumber2}` since the `api()` constructor itself understands `_server.yml` files as input. Because of this the function looks like this:
+
+```{.r launch_server}
+function(settings, host = NULL, port = NULL, ...) {
+  pa <- api(settings)
+  if (!is.null(host)) {
+    pa$host <- host
+  }
+  if (!is.null(port)) {
+    pa$port <- port
+  }
+  api_run(pa)
+}
+<environment: namespace:plumber2>
+```
+
+
+
 ## Prerequisites
 
 1. **R** (>= 3.0.0)
 2. **DigitalOcean Account** - Sign up at <https://www.digitalocean.com>
 3. **SSH Keys** - Configure SSH keys for your system
 
-## Installation
-
-```{r}
-# Install dependencies
-install.packages(c("analogsea", "yaml", "ssh", "jsonlite"))
-
-# Install buoyant (adjust path as needed)
-devtools::install_local("path/to/buoyant")
-```
 
 ## Step 1: Create Your Application
 
 Create a `_server.yml` compliant application. For example, with `{plumber2}`:
 
-```{yaml}
+```{.yaml server_yaml}
 #| file: _server.yml
 engine: plumber2
+routes: app.R
+constructor: ~
+options: {}
 ```
 
-```{r}
-#| file: plumber.R
+```{.r app}
+#| file: app.R
 #* @get /hello
 function() {
   list(message = "Hello from buoyant!")
@@ -89,16 +115,16 @@ function(query) {
 
 If you have `{plumber2}` installed:
 
-```{r}
+```{.r}
 library(plumber2)
-api("plumber.R") |> api_run()
+api("_server.yml") |> api_run()
 ```
 
 Visit <http://127.0.0.1:8080/api-docs> to see your API documentation.
 
 ## Step 3: Set Up DigitalOcean
 
-```{r}
+```{.r}
 # Authenticate with DigitalOcean
 # This will open a browser for authentication
 analogsea::do_oauth()
@@ -125,7 +151,7 @@ You can verify your DigitalOcean SSH key exists with the proper host with by cal
 
 ## Step 4: Provision a Server
 
-```{r}
+```{.r}
 library(buoyant)
 
 # This will cost money! Check DigitalOcean pricing first.
@@ -143,7 +169,7 @@ droplet <- do_provision(
 
 ## Step 5: Deploy Your Application
 
-```{r}
+```{.r}
 # Validate your _server.yml file first
 validate_server_yml("./")
 
@@ -168,7 +194,7 @@ The deployment process:
 
 ## Step 6: Access Your API
 
-```{r}
+```{.r}
 # Get the URL
 url <- do_ip(droplet, "/api")
 print(url) # e.g., "http://165.232.134.23/api"
@@ -194,13 +220,13 @@ httr2::request(paste0(url, "/add?a=5&b=3")) |>
 
 SSH into your droplet to check logs:
 
-```{r}
+```{.r}
 analogsea::droplet_ssh(droplet, "journalctl -u server-api -f")
 ```
 
 Or to see if the service is running
 
-```{r}
+```{.r}
 analogsea::droplet_ssh(droplet, "systemctl status server-api")
 ```
 
@@ -208,7 +234,7 @@ analogsea::droplet_ssh(droplet, "systemctl status server-api")
 
 If you have a domain name:
 
-```{r}
+```{.r}
 # Point your domain to the droplet IP
 ip <- do_ip(droplet)
 print(ip)

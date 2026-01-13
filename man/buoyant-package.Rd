@@ -11,7 +11,7 @@ Provides tools to deploy R web server applications that follow the '_server.yml'
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://posit-dev.github.io/buoyant}
+  \item \url{https://posit-dev.github.io/buoyant/}
   \item \url{https://github.com/posit-dev/buoyant}
   \item Report bugs at \url{https://github.com/posit-dev/buoyant/issues}
 }

@@ -15,7 +15,7 @@ Description: Provides tools to deploy R web server applications that
     and includes validation tools to ensure '_server.yml' files are
     correctly formatted.
 License: MIT + file LICENSE
-URL: https://posit-dev.github.io/buoyant,
+URL: https://posit-dev.github.io/buoyant/,
     https://github.com/posit-dev/buoyant
 BugReports: https://github.com/posit-dev/buoyant/issues
 Depends:

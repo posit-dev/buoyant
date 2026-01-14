@@ -11,7 +11,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/posit-dev/buoyant/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/posit-dev/buoyant/blob/rc-v0.1.0/DESCRIPTION)
 
 Schloerke B (2026). *buoyant: Deploy '\_server.yml' Compliant
 Applications to 'DigitalOcean'*. R package version 0.1.0,

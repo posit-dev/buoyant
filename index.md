@@ -100,9 +100,3 @@ This package is inspired by
 [plumberDeploy](https://github.com/meztez/plumberDeploy) by Bruno
 Tremblay and Jeff Allen. The `_server.yml` standard was developed as
 part of the [plumber2](https://plumber2.posit.co) project.
-
-## License
-
-MIT License. See
-[LICENSE.md](https://posit-dev.github.io/buoyant/LICENSE.md) for
-details.

@@ -36,6 +36,6 @@ VignetteBuilder:
     quarto
 Config/testthat/edition: 3
 Encoding: UTF-8
+Language: en-US
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Language: en-US

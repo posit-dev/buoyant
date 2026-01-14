@@ -40,59 +40,20 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="buoyant-010">buoyant 0.1.0<a class="anchor" aria-label="anchor" href="#buoyant-010"></a></h2>
-<p>Initial release of buoyant - a package for deploying <code>_server.yml</code> compliant R web server applications to DigitalOcean.</p>
+<p>Initial release of <a href="https://posit-dev.github.io/buoyant/">buoyant</a>: Deploy ’_server.yml’ Compliant Applications to ‘DigitalOcean’.</p>
 <div class="section level3">
-<h3 id="core-features-0-1-0">Core Features<a class="anchor" aria-label="anchor" href="#core-features-0-1-0"></a></h3>
-<ul><li>Deploy <code>_server.yml</code> applications to DigitalOcean droplets</li>
-<li>Validate <code>_server.yml</code> files before deployment</li>
-<li>Support for HTTPS/SSL via Let’s Encrypt</li>
-<li>Multiple applications on a single server</li>
-<li>Automatic systemd service creation and nginx configuration</li>
-<li>Support for any R web framework implementing the <code>_server.yml</code> standard (plumber2, fiery, etc.)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="functions-0-1-0">Functions<a class="anchor" aria-label="anchor" href="#functions-0-1-0"></a></h3>
-<div class="section level4">
-<h4 id="deployment-0-1-0">Deployment<a class="anchor" aria-label="anchor" href="#deployment-0-1-0"></a></h4>
-<ul><li>
-<code><a href="../reference/do_provision.html">do_provision()</a></code>: Provision a DigitalOcean droplet with R and dependencies</li>
-<li>
-<code><a href="../reference/do_deploy_server.html">do_deploy_server()</a></code>: Deploy a <code>_server.yml</code> application to a droplet</li>
-<li>
-<code><a href="../reference/do_remove_server.html">do_remove_server()</a></code>: Remove a deployed application from a droplet</li>
-<li>
-<code><a href="../reference/do_configure_https.html">do_configure_https()</a></code>: Add HTTPS support via Let’s Encrypt</li>
-<li>
-<code><a href="../reference/do_forward.html">do_forward()</a></code>: Forward root path to an application</li>
-<li>
-<code><a href="../reference/do_remove_forward.html">do_remove_forward()</a></code>: Remove root path forwarding</li>
-<li>
-<code><a href="../reference/do_install_server_deps.html">do_install_server_deps()</a></code>: Install server dependencies on a droplet</li>
-<li>
-<code><a href="../reference/do_keyfile.html">do_keyfile()</a></code>: Helper function to manage SSH key authentication</li>
-<li>
-<code><a href="../reference/do_ip.html">do_ip()</a></code>: Get the URL to access a deployed application</li>
-</ul></div>
-<div class="section level4">
-<h4 id="validation-0-1-0">Validation<a class="anchor" aria-label="anchor" href="#validation-0-1-0"></a></h4>
-<ul><li>
-<code><a href="../reference/validate_server_yml.html">validate_server_yml()</a></code>: Validate <code>_server.yml</code> configuration files</li>
-<li>
-<code><a href="../reference/read_server_yml.html">read_server_yml()</a></code>: Read and parse <code>_server.yml</code> configuration</li>
-</ul></div>
-</div>
-<div class="section level3">
-<h3 id="documentation-0-1-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-0"></a></h3>
-<ul><li>Comprehensive README with getting started guide and API reference</li>
-<li>Getting started vignette with step-by-step deployment walkthrough</li>
-<li>Advanced usage vignette covering multiple apps, HTTPS, and renv integration</li>
-<li>Troubleshooting vignette with common issues and solutions</li>
-</ul></div>
-<div class="section level3">
-<h3 id="infrastructure-0-1-0">Infrastructure<a class="anchor" aria-label="anchor" href="#infrastructure-0-1-0"></a></h3>
-<ul><li>GitHub Actions workflow for automated R CMD check</li>
-<li>Code of Conduct and contribution guidelines</li>
-<li>pkgdown website configuration</li>
+<h3 id="new-features-0-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0"></a></h3>
+<ul><li><p><code><a href="../reference/do_configure_https.html">do_configure_https()</a></code> adds HTTPS support via Let’s Encrypt.</p></li>
+<li><p><code><a href="../reference/do_deploy_server.html">do_deploy_server()</a></code> deploys a <code>_server.yml</code> application to a droplet with automatic systemd service creation and nginx configuration. Multiple applications can be deployed to a single server.</p></li>
+<li><p><code><a href="../reference/do_forward.html">do_forward()</a></code> forwards root path to an application.</p></li>
+<li><p><code><a href="../reference/do_install_server_deps.html">do_install_server_deps()</a></code> installs server dependencies on a droplet.</p></li>
+<li><p><code><a href="../reference/do_ip.html">do_ip()</a></code> gets the URL to access a deployed application.</p></li>
+<li><p><code><a href="../reference/do_keyfile.html">do_keyfile()</a></code> manages SSH key authentication.</p></li>
+<li><p><code><a href="../reference/do_provision.html">do_provision()</a></code> provisions a DigitalOcean droplet with R and dependencies.</p></li>
+<li><p><code><a href="../reference/do_remove_forward.html">do_remove_forward()</a></code> removes root path forwarding.</p></li>
+<li><p><code><a href="../reference/do_remove_server.html">do_remove_server()</a></code> removes a deployed application from a droplet.</p></li>
+<li><p><code><a href="../reference/read_server_yml.html">read_server_yml()</a></code> reads and parses <code>_server.yml</code> configuration files.</p></li>
+<li><p><code><a href="../reference/validate_server_yml.html">validate_server_yml()</a></code> validates <code>_server.yml</code> configuration files before deployment.</p></li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

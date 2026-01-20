@@ -2,6 +2,8 @@
 
 ## buoyant 0.1.0
 
+CRAN release: 2026-01-19
+
 Initial release of [buoyant](https://posit-dev.github.io/buoyant/):
 Deploy ’\_server.yml’ Compliant Applications to ‘DigitalOcean’.
 

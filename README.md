@@ -78,7 +78,3 @@ To make your own package compatible, see the [_server.yml specification](https:/
 ## Acknowledgments
 
 This package is inspired by [plumberDeploy](https://github.com/meztez/plumberDeploy) by Bruno Tremblay and Jeff Allen. The `_server.yml` standard was developed as part of the [plumber2](https://plumber2.posit.co) project.
-
-## License
-
-MIT License. See [LICENSE.md](LICENSE.md) for details.
